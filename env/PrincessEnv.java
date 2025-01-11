@@ -10,8 +10,10 @@ public class PrincessEnv extends jason.environment.TimeSteppedEnvironment {
     private GameWorld gameWorld;
 
     public enum Zone {
-        BASE,         // Princess is located here
-        BATTLEFIELD
+        BASE1,          // Base for Team 1
+        BASE2,          // Base for Team 2
+        BATTLEFIELD,    // Central area for combat and resource gathering
+        RIVER           // Impassable for most agents
     }
     public enum Action {
         MOVE,          // Move to a specific location
