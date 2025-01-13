@@ -173,15 +173,6 @@ public void printMap() {
     }
 }
 
-
-
-
-// Main method (test for printing)
-public static void main(String[] args) {
-        GameWorld gameWorld = new GameWorld(); // Create a GameWorld instance
-        gameWorld.initialize();               // Initialize the game world
-        gameWorld.printMap();                 // Print the map layout
-    }
 }
 
 
