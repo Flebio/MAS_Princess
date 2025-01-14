@@ -1,7 +1,7 @@
 package mas_princess.env;
 
 // Resource class
-public class Resource {
+public abstract class Resource {
     private final String name;
     private final int quantity;
     private final int x;
