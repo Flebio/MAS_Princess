@@ -4,6 +4,7 @@ import env.utils.*;
 import env.agents.*;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -13,8 +14,8 @@ public interface MapModel {
     int getHeight();
     long getFPS();
     void setFPS(long fps);
-    String printMap();
-    String printAgentList();
+    String printMap(Logger logger);
+    String printAgentList(Logger logger);
 
     // Agent Management
     boolean containsAgent(Agent agent);

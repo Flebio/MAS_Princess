@@ -7,6 +7,7 @@ import env.objects.resources.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 import java.util.function.BiFunction;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class GameMap {
@@ -31,7 +32,7 @@ public class GameMap {
         return height;
     }
     public boolean isPositionInside(int x, int y) {
-        return ((x >= 0 && x < this.width && y >= 0 && y < this.height) || (this.getCellByPosition(x,y).isOccupied()));
+        return ((x >= 0 && x < this.width && y >= 0 && y < this.height));
     }
 
     // MAP CONSTRUCTION
@@ -152,43 +153,36 @@ public class GameMap {
         }
     }
 
-    public void printAgentList() {
+    public void printAgentList(Logger logger) {
         mapLock.readLock().lock();
         try {
+            logger.info("Current agent list:");
             for (Map.Entry<String, Agent> entry : agentsList.entrySet()) {
-                System.out.println("Agent Name: " + entry.getKey()+ ", Details: " + entry.getValue().getPose());
+                logger.info("Agent Name: " + entry.getKey()+ ", Details: " + entry.getValue().getPose());
             }
+            logger.info("\n");
         } finally {
             mapLock.readLock().unlock();
         }
     }
 
-    public void printMap() {
+    public void printMap(Logger logger) {
         mapLock.readLock().lock();
         try {
+            logger.info("Current map:");
             for (int y = 0; y < this.getHeight(); y++) {
+                StringBuilder row = new StringBuilder();
                 for (int x = 0; x < this.getWidth(); x++) {
-                    Cell cell = this.map[x][y];
-                    System.out.print(cell.toString() + " ");
+                    row.append(this.map[x][y].toString()).append(" ");
                 }
-                System.out.println();
+                logger.info(row.toString());  // Log the entire row at once
             }
+            logger.info("\n");
         } finally {
             mapLock.readLock().unlock();
         }
     }
 
-    //    public Cell getCell(Vector2D position) {
-//        mapLock.readLock().lock();
-//        try {
-//            if (!isPositionInside(position.getX(), position.getY())) {
-//                throw new IllegalArgumentException("Position out of bounds: " + position);
-//            }
-//            return map[position.getX()][position.getY()];
-//        } finally {
-//            mapLock.readLock().unlock();
-//        }
-//    }
     public Cell getCellByPosition(int x, int y) {
         mapLock.readLock().lock();
         try {
@@ -269,10 +263,10 @@ public class GameMap {
                     Vector2D position = Vector2D.of(x, y);
                     if (!this.getAgentByPosition(position).isPresent()) {
                         this.setAgentPosition(agent, position);
+                        return true;
                     }
-                } else {
-                    return false;
                 }
+                return false;
             }
             this.getCellByPosition(x, y).setAgent(agent);
             agent.setPose(new Pose(Vector2D.of(x,y), orientation));
@@ -313,6 +307,10 @@ public class GameMap {
             Cell currentCell = map[currentPose.getPosition().getX()][currentPose.getPosition().getY()];
             Cell targetCell = map[newPosition.getX()][newPosition.getY()];
 
+            //System.out.println("\n\nCURRENT POSE: " + currentPose + "\n");
+            //System.out.println("CURRENT CELL (" + currentCell.getX() + "," + currentCell.getY() + ") -> [Agent: " + currentCell.getAgent() + ", Structure: " + currentCell.getStructure() + ", Resource: " + currentCell.getResource() + "]\n");
+            //System.out.println("TARGET CELL (" + targetCell.getX() + "," + targetCell.getY() + ") -> [Agent: " + targetCell.getAgent() + ", Structure: " + targetCell.getStructure() + ", Resource: " + targetCell.getResource() + "]\n");
+            //System.out.println("Target cell occupied: " + targetCell.isOccupied() + "\n");
             synchronized (currentCell) {
                 synchronized (targetCell) {
                     if (targetCell.isOccupied()) {
@@ -321,8 +319,12 @@ public class GameMap {
 
                     // Update agent position
                     this.setAgentPose(agent, newPosition, newOrientation);
+                    //System.out.println("NEW POSE: " + agentsList.get(agent.getName()).getPose() + "\n");
+
                     currentCell.setAgent(null);
                     targetCell.setAgent(agent);
+                    //System.out.println("OLD CELL (" + currentCell.getX() + "," + currentCell.getY() + ") -> [Agent: " + currentCell.getAgent() + ", Structure: " + currentCell.getStructure() + ", Resource: " + currentCell.getResource() + "]\n");
+                    //System.out.println("NEW CELL (" + targetCell.getX() + "," + targetCell.getY() + ") -> [Agent: " + targetCell.getAgent() + ", Structure: " + targetCell.getStructure() + ", Resource: " + targetCell.getResource() + "]\n\n");
                     return true;
                 }
             }

@@ -15,10 +15,7 @@ import jason.environment.Environment;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,8 +50,6 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             String type = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);  // Capitalize first letter of type
             String team = parts[1];  // Extract team (after underscore)
 
-            logger.info("Type: " + type + ", Team: " + team);
-
             try {
                 // Assuming the class names are "Warrior", "Archer", etc.
                 Class<?> agentClass = Class.forName("env.agents." + type);  // Fully qualified class name
@@ -63,16 +58,12 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 Constructor<?> constructor = agentClass.getConstructor(String.class, boolean.class);
 
                 // Instantiate the object
-                Agent agent = (Agent) constructor.newInstance(agentName, team.equals("r"));  // 'r' -> true, 'b' -> false
+                Agent agent = (Agent) constructor.newInstance(agentName, team.contains("r"));  // 'r' -> true, 'b' -> false
 
-                logger.info("CAZZZO   " + agent.toString());
                 // Add agent to the model
                 this.model.spawnAgent(agent);
 
-                logger.info("CAZZZO_2   " + agent.toString());
-
-                this.model.printAgentList();
-                this.model.printMap();
+                logger.info("New " + (team.equals("0") ? "blue" : "red") + " " + agent.getClass().getSimpleName().toLowerCase() + " spawned with pose " + agent.getPose());
 
                 return agent;
             } catch (ClassNotFoundException e) {
@@ -93,92 +84,155 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         return null;
     }
 
-
     @Override
     public Collection<Literal> getPercepts(String agentName) {
         Agent agent = initializeAgentIfNeeded(agentName);
 
-        // Combine percepts: surrounding tiles and neighbors
+        //        logger.info("Fetching percepts for agent: " + agentName);
+
+        // Combine percepts: surrounding tiles, neighbors, and personal beliefs
         return Stream.concat(
-                surroundingPercepts(agent).stream(),
-                neighboursPercepts(agent).stream()
+                personalBeliefsPercepts(agent).stream(),
+                Stream.concat(
+                        surroundingPercepts(agent).stream(),
+                        neighboursPercepts(agent).stream()
+                )
         ).collect(Collectors.toList());
     }
 
     @Override
-    public Collection<Literal> surroundingPercepts(Agent agent) {
-        Collection<Literal> culo = model.getAgentSurroundingPositions(agent).entrySet().stream()
-                .map(entry -> proximityPerceptFor(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toList());
-        logger.info("CULO" + culo);
-        return culo;
+    public Collection<Literal> personalBeliefsPercepts(Agent agent) {
+        Collection<Literal> personalBeliefs = new ArrayList<>();
+
+        personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
+        personalBeliefs.add(Literal.parseLiteral(String.format("position(%d, %d)", agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY())));
+        personalBeliefs.add(Literal.parseLiteral(String.format("orientation(%s)", agent.getPose().getOrientation().name().toLowerCase())));
+
+        return personalBeliefs;
     }
 
-    private Literal proximityPerceptFor(Direction direction, Vector2D position) {
+
+    @Override
+    public Collection<Literal> surroundingPercepts(Agent agent) {
+        Collection<Literal> surroundings = model.getAgentSurroundingPositions(agent).entrySet().stream()
+                .map(entry -> proximityPerceptFor(agent, entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+//        logger.info("Surroundings(" + agent.getName() + ") -> " + surroundings);
+        return surroundings;
+    }
+
+    private Literal proximityPerceptFor(Agent agent, Direction direction, Vector2D position) {
         Cell surroundingCell = this.model.getCellByPosition(position);
 
         if (surroundingCell == null) {
-            return Literal.parseLiteral(String.format("OUT OF MAP [Direction -> %s]", direction.name().toLowerCase()));
+            return Literal.parseLiteral(String.format("obstacle(%s)", direction.name().toLowerCase()));
         }
 
-        Agent agent = surroundingCell.getAgent();
+        Agent neighbour_agent = surroundingCell.getAgent();
         MapStructure structure = surroundingCell.getStructure();
         Resource resource = surroundingCell.getResource();
-// FARE QUESTA FUNCTION
-        if (agent != null) {
-            return Literal.parseLiteral(String.format(agent.toString(), "[Direction -> %s]", direction.name().toLowerCase()));
+
+        if (neighbour_agent != null) {
+            if (agent.getTeam() == neighbour_agent.getTeam()) {
+                return Literal.parseLiteral(String.format("surrounding_ally(%s)", direction.name().toLowerCase()));
+            } else {
+                return Literal.parseLiteral(String.format("surrounding_enemy(%s)", direction.name().toLowerCase()));
+            }
         } else if (structure != null) {
-            return Literal.parseLiteral(String.format(structure.toString(), "[Direction -> %s]", direction.name().toLowerCase()));
+            return Literal.parseLiteral(String.format("%s(%s)", structure.getClass().getSimpleName().toLowerCase(), direction.name().toLowerCase()));
         } else if (resource != null) {
-            return Literal.parseLiteral(String.format(resource.toString(), "[Direction -> %s]", direction.name().toLowerCase()));
+            return Literal.parseLiteral(String.format("%s(%s)", resource.getClass().getSimpleName().toLowerCase(), direction.name().toLowerCase()));
         } else {
-            return Literal.parseLiteral(String.format("empty CELL [Direction -> %s]", direction.name().toLowerCase()));
+            return Literal.parseLiteral(String.format("free(%s)", direction.name().toLowerCase()));
         }
     }
 
     @Override
     public Collection<Literal> neighboursPercepts(Agent agent) {
-        Collection<Literal> culo = model.getAgentNeighbours(agent).stream()
-                .map(it -> String.format("[Neighbour -> %s]", it))
+        Collection<Literal> in_range = model.getAgentNeighbours(agent).stream()
+                .map(it -> String.format("agent_in_range(%s)", it.getName()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList());
-        logger.info("CULO_2" + culo);
-        return culo;
+//        logger.info("in_range(" + agent.getName() + ") -> " + in_range);
+        return in_range;
     }
+
+//    @Override
+//    public boolean executeAction(final String ag, final Structure action) {
+//        Agent agent = initializeAgentIfNeeded(ag);
+//
+//        this.model.printAgentList(logger);
+//        this.model.printMap(logger);
+//
+//        logger.info("action: " + action.toString());
+//        logger.info("\tterms:" + action.getTerms());
+//
+//        final boolean result;
+//        if (movementActions.containsValue(action)) {
+//            if (action.equals(movementActions.get("random"))) {
+//                Direction randomDirection = Direction.random();
+//                logger.info("Chosen direction for random movement: " + randomDirection);
+//                result = model.moveAgent(agent, 1, randomDirection);
+//            } else {
+//                Direction direction = getDirectionForAction(action);
+//                result = model.moveAgent(agent, 1, direction);
+//            }
+//        } else {
+//            logger.warning("Unknown action: " + action);
+//            return false;
+//        }
+//
+//        // Update the view and simulate delay for FPS
+//
+////        try {
+////            Thread.sleep(1000L / model.getFPS());
+////        } catch (InterruptedException ignored) {
+////            logger.info("Arturo penelli");
+////        }
+//
+//        return result;
+//    }
 
     @Override
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
-        logger.info("AZIONE  STRUTTURA" + action.toString());
+
+        System.out.println("Warrior name:" + ag);
+        System.out.println(ag == "warrior_r1");
+        if (ag.equals("warrior_r1")) {
+            this.model.printAgentList(logger);
+            this.model.printMap(logger);
+        }
+
+        logger.info(ag + " does action: " + action.toString());
 
         final boolean result;
         if (movementActions.containsValue(action)) {
             if (action.equals(movementActions.get("random"))) {
-                logger.info("AZIONE 1");
                 Direction randomDirection = Direction.random();
+                logger.info("Chosen direction for random movement: " + randomDirection);
                 result = model.moveAgent(agent, 1, randomDirection);
             } else {
-                logger.info("AZIONE 2");
                 Direction direction = getDirectionForAction(action);
                 result = model.moveAgent(agent, 1, direction);
             }
         } else {
-            logger.info("AZIONE 3");
             logger.warning("Unknown action: " + action);
             return false;
         }
 
         // Update the view and simulate delay for FPS
-        this.model.printAgentList();
-        this.model.printMap();
 
-        try {
-            Thread.sleep(1000L / model.getFPS());
-        } catch (InterruptedException ignored) {
-        }
+//        try {
+//            Thread.sleep(1000L / model.getFPS());
+//        } catch (InterruptedException ignored) {
+//            logger.info("Arturo penelli");
+//        }
 
         return result;
     }
+
+
 
     // Movement actions collection
     private static final Map<String, Literal> movementActions = Map.of(

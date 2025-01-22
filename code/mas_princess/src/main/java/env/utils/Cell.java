@@ -43,7 +43,9 @@ public class Cell {
         return structure;
     }
     public void setStructure(MapStructure structure) {
-        if (this.isOccupied()) {
+        if (structure == null) {
+            this.structure = null;
+        }else if (this.isOccupied()) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.structure = structure;
@@ -54,7 +56,9 @@ public class Cell {
         return resource;
     }
     public void setResource(Resource resource) {
-        if (this.isOccupied()) {
+        if (resource == null) {
+            this.resource = null;
+        }else if (this.isOccupied()) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.resource = resource;
@@ -67,7 +71,9 @@ public class Cell {
     }
 
     public void setAgent(Agent agent) {
-        if (this.isOccupied()) {
+        if (agent == null) {
+            this.agent = null;
+        }else if (this.isOccupied()) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.agent = agent;

@@ -19,7 +19,7 @@ public interface MapEnvironment {
     Collection<Literal> getPercepts(String agentName);
 
     boolean executeAction(String ag, Structure action);
-
+    public Collection<Literal> personalBeliefsPercepts(Agent agent);
     Collection<Literal> surroundingPercepts(Agent agent);
 
     Collection<Literal> neighboursPercepts(Agent agent);

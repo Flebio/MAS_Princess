@@ -4,6 +4,7 @@ import env.utils.*;
 import env.agents.*;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 public class BlackForestModel implements MapModel {
     private final GameMap gameMap;
@@ -37,14 +38,14 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public String printMap() {
-        this.gameMap.printMap();
+    public String printMap(Logger logger) {
+        this.gameMap.printMap(logger);
         return null;
     }
 
     @Override
-    public String printAgentList() {
-        this.gameMap.printAgentList();
+    public String printAgentList(Logger logger) {
+        this.gameMap.printAgentList(logger);
         return null;
     }
 
