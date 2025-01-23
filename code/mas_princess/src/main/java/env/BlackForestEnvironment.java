@@ -1,6 +1,5 @@
 package env;
 
-import env.*;
 import env.agents.*;
 import env.objects.structures.*;
 import env.objects.resources.*;
@@ -19,6 +18,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 
 public class BlackForestEnvironment extends Environment implements MapEnvironment {
 
@@ -63,7 +63,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 // Add agent to the model
                 this.model.spawnAgent(agent);
 
-                logger.info("New " + (team.equals("0") ? "blue" : "red") + " " + agent.getClass().getSimpleName().toLowerCase() + " spawned with pose " + agent.getPose());
+                logger.info("New " + (team.contains("r") ? "red" : "blue") + " " + agent.getClass().getSimpleName().toLowerCase() + " spawned with pose " + agent.getPose());
 
                 return agent;
             } catch (ClassNotFoundException e) {
@@ -105,8 +105,13 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Collection<Literal> personalBeliefs = new ArrayList<>();
 
         personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
+        personalBeliefs.add(Literal.parseLiteral(String.format("zone_type(%s)", this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType().name().toLowerCase())));
         personalBeliefs.add(Literal.parseLiteral(String.format("position(%d, %d)", agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY())));
         personalBeliefs.add(Literal.parseLiteral(String.format("orientation(%s)", agent.getPose().getOrientation().name().toLowerCase())));
+
+        // If for each agent we get its position and team we can give information
+        // about where each ally and enemy are
+        // for ag in this.model.getAllAgents():
 
         return personalBeliefs;
     }
@@ -150,56 +155,24 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     @Override
     public Collection<Literal> neighboursPercepts(Agent agent) {
         Collection<Literal> in_range = model.getAgentNeighbours(agent).stream()
-                .map(it -> String.format("agent_in_range(%s)", it.getName()))
+                .map(it -> {
+                    String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_range" : "enemy_in_range";
+                    return String.format("%s(%s)", relation, it.getName());
+                })
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList());
+
 //        logger.info("in_range(" + agent.getName() + ") -> " + in_range);
         return in_range;
     }
-
-//    @Override
-//    public boolean executeAction(final String ag, final Structure action) {
-//        Agent agent = initializeAgentIfNeeded(ag);
-//
-//        this.model.printAgentList(logger);
-//        this.model.printMap(logger);
-//
-//        logger.info("action: " + action.toString());
-//        logger.info("\tterms:" + action.getTerms());
-//
-//        final boolean result;
-//        if (movementActions.containsValue(action)) {
-//            if (action.equals(movementActions.get("random"))) {
-//                Direction randomDirection = Direction.random();
-//                logger.info("Chosen direction for random movement: " + randomDirection);
-//                result = model.moveAgent(agent, 1, randomDirection);
-//            } else {
-//                Direction direction = getDirectionForAction(action);
-//                result = model.moveAgent(agent, 1, direction);
-//            }
-//        } else {
-//            logger.warning("Unknown action: " + action);
-//            return false;
-//        }
-//
-//        // Update the view and simulate delay for FPS
-//
-////        try {
-////            Thread.sleep(1000L / model.getFPS());
-////        } catch (InterruptedException ignored) {
-////            logger.info("Arturo penelli");
-////        }
-//
-//        return result;
-//    }
 
     @Override
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
 
         System.out.println("Warrior name:" + ag);
-        System.out.println(ag == "warrior_r1");
-        if (ag.equals("warrior_r1")) {
+        System.out.println(ag == "warrior_b1");
+        if (ag.equals("archer_b1")) {
             this.model.printAgentList(logger);
             this.model.printMap(logger);
         }
@@ -213,7 +186,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 logger.info("Chosen direction for random movement: " + randomDirection);
                 result = model.moveAgent(agent, 1, randomDirection);
             } else {
-                Direction direction = getDirectionForAction(action);
+                Direction direction = getDirectionForAction(action, movementActions);
                 result = model.moveAgent(agent, 1, direction);
             }
         } else {
@@ -232,8 +205,6 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         return result;
     }
 
-
-
     // Movement actions collection
     private static final Map<String, Literal> movementActions = Map.of(
             FORWARD.name().toLowerCase(), Literal.parseLiteral("move(" + FORWARD.name().toLowerCase() + ")"),
@@ -242,8 +213,8 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             BACKWARD.name().toLowerCase(), Literal.parseLiteral("move(" + BACKWARD.name().toLowerCase() + ")"),
             "random", Literal.parseLiteral("move(random)")
     );
-    private Direction getDirectionForAction(Structure action) {
-        return movementActions.entrySet().stream()
+    private Direction getDirectionForAction(Structure action, Map<String, Literal> mapping) {
+        return mapping.entrySet().stream()
                 .filter(entry -> entry.getValue().equals(action))
                 .map(entry -> Direction.valueOf(entry.getKey().toUpperCase()))
                 .findFirst()

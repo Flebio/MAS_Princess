@@ -1,14 +1,19 @@
-/* Warrior Agent Initialization */
+/* Soldier Agent Initialization */
+state(spawn).
+objective(ally_gate).
 team(0).
 hp(100).
 att_damage(10).
 att_range(1).
 
+land_p(95).
+bridge_p(5).
+
 !start.
 
 +!start <-
-    /* !moveTowardTheBoundary. */
-    !move_random.
+    /* !moveTowardTheBoundary.
+    !move_random. */
 
 /* Plan to move towards the boundary */
 +!moveTowardTheBoundary: orientation(north) <-
@@ -38,9 +43,9 @@ att_range(1).
 /* Plan for random movement */
 +!move_random <-
     move(random);
-    .wait(10000);
+    .wait(5000);
     !move_random.
 
 -!move_random <-
-    .wait(10000);
+    .wait(5000);
     !move_random.

@@ -126,6 +126,7 @@ public class Cell {
 
     private char getAgentSymbol() {
         if (agent instanceof Warrior) return 'W';
+        if (agent instanceof Archer) return 'A';
         return ' ';
     }
 

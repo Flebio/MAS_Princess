@@ -115,7 +115,7 @@ public class GameMap {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, 1);
+                        Gate gate = new Gate(100, 0);
                         map[x][y].setStructure(gate);
                         map[x][y + 1].setStructure(gate);
                     } else if (y != this.getHeight() / 2) {
@@ -129,7 +129,7 @@ public class GameMap {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, 2);
+                        Gate gate = new Gate(100, 1);
                         map[x][y].setStructure(gate);
                         map[x][y + 1].setStructure(gate);
                     } else if (y != this.getHeight() / 2) {
