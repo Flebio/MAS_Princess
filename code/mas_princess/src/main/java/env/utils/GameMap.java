@@ -45,6 +45,7 @@ public class GameMap {
     public void addStructures() {
         addWallsAndGates();
         addBridge();
+        addTrees();
     }
 
     private void createBaseZones() {
@@ -152,6 +153,78 @@ public class GameMap {
             }
         }
     }
+
+    private void addTrees() {
+        // Number of trees to spawn (e.g., ~5% of the map area)
+        int treeCount = (this.width * this.height) / 15;
+
+        // Define spawn area dimensions
+        int northSpawnAreaWidth = this.getWidth() / 3; // Width for each northern area (smaller)
+        int southSpawnAreaWidth = this.getWidth() / 2; // Width for each southern area (larger)
+        int spawnAreaHeight = this.getHeight() / 4; // Height for each area (same for all)
+
+        // Define bounds for the four areas (northern and southern)
+        int northStartY = 0; // Northern areas start at the top row
+        int southStartY = this.getHeight() - spawnAreaHeight; // Southern areas start at the bottom row
+        int area1StartX = 0; // Left northern area
+        int area2StartX = this.getWidth() - northSpawnAreaWidth; // Right northern area
+        int area3StartX = 0; // Left southern area
+        int area4StartX = this.getWidth() - southSpawnAreaWidth; // Right southern area
+
+        // Define a list of all spawnable cells
+        List<Cell> spawnableCells = new ArrayList<>();
+
+        // Add northern areas to spawnable cells (top border included)
+        for (int x = area1StartX; x < area1StartX + northSpawnAreaWidth; x++) {
+            for (int y = northStartY; y < northStartY + spawnAreaHeight; y++) {
+                if (isValidTreeCell(x, y)) {
+                    spawnableCells.add(map[x][y]);
+                }
+            }
+        }
+        for (int x = area2StartX; x < area2StartX + northSpawnAreaWidth; x++) {
+            for (int y = northStartY; y < northStartY + spawnAreaHeight; y++) {
+                if (isValidTreeCell(x, y)) {
+                    spawnableCells.add(map[x][y]);
+                }
+            }
+        }
+
+        // Add southern areas to spawnable cells (bottom border included)
+        for (int x = area3StartX; x < area3StartX + southSpawnAreaWidth; x++) {
+            for (int y = southStartY; y < southStartY + spawnAreaHeight; y++) {
+                if (isValidTreeCell(x, y)) {
+                    spawnableCells.add(map[x][y]);
+                }
+            }
+        }
+        for (int x = area4StartX; x < area4StartX + southSpawnAreaWidth; x++) {
+            for (int y = southStartY; y < southStartY + spawnAreaHeight; y++) {
+                if (isValidTreeCell(x, y)) {
+                    spawnableCells.add(map[x][y]);
+                }
+            }
+        }
+
+        // Randomly place trees in the spawnable cells
+        for (int i = 0; i < treeCount && !spawnableCells.isEmpty(); i++) {
+            int index = RAND.nextInt(spawnableCells.size());
+            Cell selectedCell = spawnableCells.remove(index);
+            selectedCell.setStructure(new Tree(50, 20)); // Create a tree with example health and resource values
+        }
+    }
+
+    // Helper method to validate if a cell can have a tree
+    private boolean isValidTreeCell(int x, int y) {
+        return map[x][y] != null
+                && map[x][y].getStructure() == null
+                && map[x][y].getZoneType() == Zone.BATTLEFIELD;
+    }
+
+
+
+
+
 
     public void printAgentList(Logger logger) {
         mapLock.readLock().lock();

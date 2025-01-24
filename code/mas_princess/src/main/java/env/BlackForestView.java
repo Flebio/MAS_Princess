@@ -17,7 +17,8 @@ public class BlackForestView extends JFrame implements MapView {
     private final MapModel model; // The map model
     private final Map<Vector2D, JLabel> cellsGrid = new HashMap<>(); // Mapping of positions to grid labels
     private final Map<Zone, ImageIcon> zoneSprites = new EnumMap<>(Zone.class); // Mapping of zone types to sprites
-    private final Map<Class<? extends Agent>, ImageIcon> agentSprites = new HashMap<>(); // Mapping of agent types to sprites
+    private final Map<AgentKey, ImageIcon> agentSprites = new HashMap<>();
+
 
     // Constructor
     public BlackForestView(MapModel model) {
@@ -61,9 +62,30 @@ public class BlackForestView extends JFrame implements MapView {
 
     // Load sprites for each agent type
     private void loadAgentSprites() {
-        agentSprites.put(Warrior.class, new ImageIcon(getClass().getResource("/sprites/warrior.png")));
-        agentSprites.put(Archer.class, new ImageIcon(getClass().getResource("/sprites/archer.png")));
+        // Sprites for Warriors
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/warrior_red_north.png")));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/warrior_red_south.png")));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/warrior_red_east.png")));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/warrior_red_west.png")));
+
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/warrior_blue_north.png")));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/warrior_blue_south.png")));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/warrior_blue_east.png")));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/warrior_blue_west.png")));
+
+        // Sprites for Archers
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/archer_red_north.png")));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/archer_red_south.png")));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/archer_red_east.png")));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/archer_red_west.png")));
+
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/archer_blue_north.png")));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/archer_blue_south.png")));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/archer_blue_east.png")));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/archer_blue_west.png")));
     }
+
+
 
     // Refresh the view to display sprites based on zone types, structures, and agents
     private void refreshBackground() {
@@ -113,14 +135,23 @@ public class BlackForestView extends JFrame implements MapView {
             return new ImageIcon(getClass().getResource("/sprites/wall.png"));
         } else if (structure instanceof Bridge) {
             return new ImageIcon(getClass().getResource("/sprites/bridge.png"));
+        } else if (structure instanceof Tree) {
+            return new ImageIcon(getClass().getResource("/sprites/tree.png"));
         }
         return null; // No structure icon if not recognized
     }
 
     // Get the appropriate agent icon
     private ImageIcon getAgentIcon(Agent agent) {
-        return agentSprites.get(agent.getClass());
+        Pose pose = agent.getPose();
+        if (pose == null) {
+            return null; // No pose means no icon
+        }
+
+        // Retrieve sprite based on agent class, team, and orientation
+        return agentSprites.get(new AgentKey(agent.getClass(), agent.getTeam(), pose.getOrientation()));
     }
+
 
     // This method creates a new image by combining the existing image (with transparency) and the overlay icon.
     private Image createImageWithTransparency(ImageIcon baseImage, Image overlayImage) {
