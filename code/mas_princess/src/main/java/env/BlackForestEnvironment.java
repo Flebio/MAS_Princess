@@ -62,6 +62,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
                 // Add agent to the model
                 this.model.spawnAgent(agent);
+                notifyModelChangedToView();
 
                 logger.info("New " + (team.contains("r") ? "red" : "blue") + " " + agent.getClass().getSimpleName().toLowerCase() + " spawned with pose " + agent.getPose());
 
@@ -185,9 +186,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 Direction randomDirection = Direction.random();
                 logger.info("Chosen direction for random movement: " + randomDirection);
                 result = model.moveAgent(agent, 1, randomDirection);
+                notifyModelChangedToView();
             } else {
                 Direction direction = getDirectionForAction(action, movementActions);
                 result = model.moveAgent(agent, 1, direction);
+                notifyModelChangedToView();
             }
         } else {
             logger.warning("Unknown action: " + action);
