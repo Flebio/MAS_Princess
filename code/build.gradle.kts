@@ -9,7 +9,9 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(19)
+            //languageVersion = JavaLanguageVersion.of(19)
+            languageVersion.set(JavaLanguageVersion.of(19))
+
         }
     }
 

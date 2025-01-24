@@ -25,20 +25,20 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     private static final Random RAND = new Random();
     static Logger logger = Logger.getLogger(BlackForestEnvironment.class.getName());
     private MapModel model;
-//    private MapView view;
+    private BlackForestView view;
 
     @Override
     public void init(final String[] args) {
         this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
-//        BlackForestView view = new BlackForestView(model);
-//        this.view = view;
-//        view.setVisible(true);
+        BlackForestView view = new BlackForestView(model);
+        this.view = view;
+        view.setVisible(true);
     }
 
-//    @Override
-//    public void notifyModelChangedToView() {
-//        view.notifyModelChanged();
-//    }
+    //@Override
+    public void notifyModelChangedToView() {
+        view.notifyModelChanged();
+    }
 
     @Override
     public Agent initializeAgentIfNeeded(String agentName) {
