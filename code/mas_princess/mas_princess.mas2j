@@ -6,15 +6,10 @@ MAS princess {
 
 	agents: // which agents partecipates the MAS?
 		archer_b1 soldier_agent;
-		warrior_r1 soldier_agent;
-		warrior_b1 soldier_agent;
-		archer_r1 soldier_agent;
-        archer_b2 soldier_agent;
-        archer_b3 soldier_agent;
-        archer_b4 soldier_agent;
-        archer_r2 soldier_agent;
-        archer_r3 soldier_agent;
-        archer_r4 soldier_agent;
+		// warrior_b2 soldier_agent;
+		// warrior_r1 soldier_agent;
+        // archer_b1 old_code;
+
 	aslSourcePath: // where to find agents' source code
 		"src/main/asl";
 }

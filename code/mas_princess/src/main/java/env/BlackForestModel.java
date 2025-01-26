@@ -24,10 +24,6 @@ public class BlackForestModel implements MapModel {
         return this.gameMap.getHeight();
     }
     @Override
-    public boolean isPositionInside(int x, int y) {
-        return this.gameMap.isPositionInside(x, y);
-    }
-    @Override
     public long getFPS() {
         return fps;
     }
@@ -74,23 +70,13 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public Cell getCellByPosition(Vector2D position) {
-        return this.gameMap.getCellByPosition(position);
-    }
-
-    @Override
     public Optional<Agent> getAgentByName(String agName) {
         return this.gameMap.getAgentByName(agName);
     }
 
     @Override
-    public boolean areAgentsNeighbours(Agent agent, Agent neighbour) {
-        return this.gameMap.areAgentsNeighbours(agent, neighbour);
-    }
-
-    @Override
-    public Set<Agent> getAgentNeighbours(Agent agent) {
-        return this.gameMap.getAgentNeighbours(agent);
+    public Set<Agent> getAgentNeighbours(Agent agent, int range) {
+        return this.gameMap.getAgentNeighbours(agent, range);
     }
     @Override
     public void setAgentPosition(Agent agent, Vector2D position) {
@@ -116,4 +102,17 @@ public class BlackForestModel implements MapModel {
     public boolean moveAgent(Agent agent, int stepSize, Direction direction) {
         return this.gameMap.moveAgent(agent, stepSize, direction);
     }
+    @Override
+    public boolean isPositionInside(int x, int y) {
+        return this.gameMap.isPositionInside(x, y);
+    }
+    @Override
+    public Cell getCellByPosition(Vector2D position) {
+        return this.gameMap.getCellByPosition(position);
+    }
+    @Override
+    public Pair<String, Vector2D> getClosestObjective(Agent agent) {
+        return this.gameMap.getClosestObjective(agent);
+    }
+
 }

@@ -3,10 +3,12 @@ package env.utils;
 import env.agents.*;
 import env.objects.structures.*;
 import env.objects.resources.*;
+import jason.asSyntax.Literal;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -59,7 +61,6 @@ public class GameMap {
             }
         }
     }
-
     private void createRiver() {
         int centerX = this.getWidth() / 2;
         int centerY = this.getHeight() / 2;
@@ -73,7 +74,6 @@ public class GameMap {
         createDiagonal(centerX, centerY, -1);
         createDiagonal(centerX, centerY, 1);
     }
-
     private void createDiagonal(int centerX, int centerY, int direction) {
         for (int x = centerX + direction; x >= 0 && x < this.getWidth(); x += direction) {
             int yStart = centerY - Math.abs(x - centerX);
@@ -86,16 +86,40 @@ public class GameMap {
         }
     }
 
+//    private void createBattlefield() {
+//        int crossableY1 = (this.getHeight() / 3) - 1;
+//        int crossableY2 = crossableY1 - 1;
+//
+//        for (int x = 0; x < this.getWidth(); x++) {
+//            if (map[x][crossableY1] != null && map[x][crossableY1].getZoneType() == Zone.OUT_OF_MAP) {
+//                map[x][crossableY1] = new Cell(Zone.BATTLEFIELD, x, crossableY1);
+//            }
+//            if (map[x][crossableY2] != null && map[x][crossableY2].getZoneType() == Zone.OUT_OF_MAP) {
+//                map[x][crossableY2] = new Cell(Zone.BATTLEFIELD, x , crossableY2);
+//            }
+//        }
+//
+//        for (int x = 0; x < this.getWidth(); x++) {
+//            for (int y = 0; y < this.getHeight(); y++) {
+//                if (map[x][y] == null) {
+//                    map[x][y] = new Cell(Zone.BATTLEFIELD, x, y);
+//                }
+//            }
+//        }
+//    }
     private void createBattlefield() {
         int crossableY1 = (this.getHeight() / 3) - 1;
         int crossableY2 = crossableY1 - 1;
+        int middleX = this.getWidth() / 2;
+
+        boolean flagPlaced = false;
 
         for (int x = 0; x < this.getWidth(); x++) {
             if (map[x][crossableY1] != null && map[x][crossableY1].getZoneType() == Zone.OUT_OF_MAP) {
                 map[x][crossableY1] = new Cell(Zone.BATTLEFIELD, x, crossableY1);
             }
             if (map[x][crossableY2] != null && map[x][crossableY2].getZoneType() == Zone.OUT_OF_MAP) {
-                map[x][crossableY2] = new Cell(Zone.BATTLEFIELD, x , crossableY2);
+                map[x][crossableY2] = new Cell(Zone.BATTLEFIELD, x, crossableY2);
             }
         }
 
@@ -104,6 +128,16 @@ public class GameMap {
                 if (map[x][y] == null) {
                     map[x][y] = new Cell(Zone.BATTLEFIELD, x, y);
                 }
+            }
+            // Place WarFlags where the battlefield crosses the river
+            if (!flagPlaced && x == middleX) {
+                if (map[x][crossableY1] != null) {
+                    map[x][crossableY1].setStructure(new WarFlag());
+                }
+                if (map[x][crossableY2] != null) {
+                    map[x][crossableY2].setStructure(new WarFlag());
+                }
+                flagPlaced = true;
             }
         }
     }
@@ -116,11 +150,11 @@ public class GameMap {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, 0);
+                        Gate gate = new Gate(100, false);
                         map[x][y].setStructure(gate);
                         map[x][y + 1].setStructure(gate);
                     } else if (y != this.getHeight() / 2) {
-                        map[x][y].setStructure(new Wall());
+                        map[x][y].setStructure(new Wall(false));
                     }
                 }
             }
@@ -130,11 +164,11 @@ public class GameMap {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, 1);
+                        Gate gate = new Gate(100, true);
                         map[x][y].setStructure(gate);
                         map[x][y + 1].setStructure(gate);
                     } else if (y != this.getHeight() / 2) {
-                        map[x][y].setStructure(new Wall());
+                        map[x][y].setStructure(new Wall(true));
                     }
                 }
             }
@@ -152,6 +186,12 @@ public class GameMap {
                 map[x][y].setStructure(bridge);
             }
         }
+    }
+    // Helper method to validate if a cell can have a tree
+    private boolean isValidTreeCell(int x, int y) {
+        return map[x][y] != null
+                && map[x][y].getStructure() == null
+                && map[x][y].getZoneType() == Zone.BATTLEFIELD;
     }
 
     private void addTrees() {
@@ -214,18 +254,6 @@ public class GameMap {
         }
     }
 
-    // Helper method to validate if a cell can have a tree
-    private boolean isValidTreeCell(int x, int y) {
-        return map[x][y] != null
-                && map[x][y].getStructure() == null
-                && map[x][y].getZoneType() == Zone.BATTLEFIELD;
-    }
-
-
-
-
-
-
     public void printAgentList(Logger logger) {
         mapLock.readLock().lock();
         try {
@@ -275,14 +303,23 @@ public class GameMap {
     /**
      * Returns a list of cells based on filtering criteria.
      *
-     * @param zoneType        Optional zone type to filter by (can be null).
-     * @param structure       Optional structure to filter by (can be null).
-     * @param resource        Optional resource to filter by (can be null).
-     * @param agent       Optional agent to filter by (can be null).
+     * @param zoneType       Optional zone type to filter by (can be null).
+     * @param structureClass Optional class type of structure to filter by (can be null).
+     * @param structurePredicate Optional predicate to filter structures by specific fields (can be null).
+     * @param resourceClass  Optional class type of resource to filter by (can be null).
+     * @param resourcePredicate Optional predicate to filter resources by specific fields (can be null).
+     * @param agentClass     Optional class type of agent to filter by (can be null).
+     * @param agentPredicate Optional predicate to filter agents by specific fields (can be null).
      * @param includeMatching If true, returns cells matching the criteria; if false, returns the complement.
      * @return List of cells filtered by the specified criteria in raster order.
      */
-    public List<Cell> getAllCells(Zone zoneType, MapStructure structure, Resource resource, Agent agent, boolean includeMatching) {
+    public List<Cell> getAllCells(
+            Zone zoneType,
+            Class<? extends MapStructure> structureClass, Predicate<MapStructure> structurePredicate,
+            Class<? extends Resource> resourceClass, Predicate<Resource> resourcePredicate,
+            Class<? extends Agent> agentClass, Predicate<Agent> agentPredicate,
+            boolean includeMatching) {
+
         mapLock.readLock().lock();
         try {
             return Arrays.stream(map)
@@ -293,14 +330,18 @@ public class GameMap {
                         if (zoneType != null) {
                             matches &= zoneType.equals(cell.getZoneType());
                         }
-                        if (structure != null) {
-                            matches &= structure.equals(cell.getStructure());
+                        if (structureClass != null) {
+                            matches &= structureClass.isInstance(cell.getStructure()) &&
+                                    (structurePredicate == null || structurePredicate.test(cell.getStructure()));
                         }
-                        if (resource != null) {
-                            matches &= resource.equals(cell.getResource());
+
+                        if (resourceClass != null) {
+                            matches &= resourceClass.isInstance(cell.getResource()) &&
+                                    (resourcePredicate == null || resourcePredicate.test(cell.getResource()));
                         }
-                        if (agent != null) {
-                            matches &= agent.getName().equals(cell.getAgent().getName());
+                        if (agentClass != null && cell.getAgent() != null) {
+                            matches &= agentClass.isInstance(cell.getAgent()) &&
+                                    (agentPredicate == null || agentPredicate.test(cell.getAgent()));
                         }
 
                         return includeMatching == matches;
@@ -310,6 +351,7 @@ public class GameMap {
             mapLock.readLock().unlock();
         }
     }
+
 
     // AGENTS MANAGEMENT
     // NEWLY IMPLEMENTED METHODS
@@ -353,10 +395,15 @@ public class GameMap {
     }
     public boolean spawnAgent(Agent agent) {
         // BISOGNA UTILIZZARE IL LOCK
-        Zone teamBase = (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE;
-
         // Get all unoccupied cells in the team's base zone with their positions
-        List<Cell> availableCells = getAllCells(teamBase, null, null, null, true);
+        List<Cell> availableCells = getAllCells(
+                (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE,
+                null, null,
+                null, null,
+                null, null,
+                true
+        );
+
         if (availableCells.isEmpty()) {
             return false; // No available cells in the base
         }
@@ -380,24 +427,26 @@ public class GameMap {
             Cell currentCell = map[currentPose.getPosition().getX()][currentPose.getPosition().getY()];
             Cell targetCell = map[newPosition.getX()][newPosition.getY()];
 
-            //System.out.println("\n\nCURRENT POSE: " + currentPose + "\n");
-            //System.out.println("CURRENT CELL (" + currentCell.getX() + "," + currentCell.getY() + ") -> [Agent: " + currentCell.getAgent() + ", Structure: " + currentCell.getStructure() + ", Resource: " + currentCell.getResource() + "]\n");
-            //System.out.println("TARGET CELL (" + targetCell.getX() + "," + targetCell.getY() + ") -> [Agent: " + targetCell.getAgent() + ", Structure: " + targetCell.getStructure() + ", Resource: " + targetCell.getResource() + "]\n");
-            //System.out.println("Target cell occupied: " + targetCell.isOccupied() + "\n");
             synchronized (currentCell) {
                 synchronized (targetCell) {
-                    if (targetCell.isOccupied()) {
+                    if (targetCell.isOccupied(agent)) {
                         return false; // Target cell is occupied
                     }
 
                     // Update agent position
                     this.setAgentPose(agent, newPosition, newOrientation);
-                    //System.out.println("NEW POSE: " + agentsList.get(agent.getName()).getPose() + "\n");
 
                     currentCell.setAgent(null);
                     targetCell.setAgent(agent);
-                    //System.out.println("OLD CELL (" + currentCell.getX() + "," + currentCell.getY() + ") -> [Agent: " + currentCell.getAgent() + ", Structure: " + currentCell.getStructure() + ", Resource: " + currentCell.getResource() + "]\n");
-                    //System.out.println("NEW CELL (" + targetCell.getX() + "," + targetCell.getY() + ") -> [Agent: " + targetCell.getAgent() + ", Structure: " + targetCell.getStructure() + ", Resource: " + targetCell.getResource() + "]\n\n");
+
+//                    if ((targetCell.getZoneType() == Zone.BBASE && agent.getTeam() == false) || (targetCell.getZoneType() == Zone.RBASE && agent.getTeam() == true)) {
+//                        agent.setState("spawn");
+//                    } else if ((targetCell.getZoneType() == Zone.BBASE && agent.getTeam() == true) || (targetCell.getZoneType() == Zone.RBASE && agent.getTeam() == false)) {
+//                        agent.setState("enemy_base");
+//                    } else if ((targetCell.getZoneType() == Zone.BATTLEFIELD)) {
+//                        agent.setState("battlefield");
+//                    }
+
                     return true;
                 }
             }
@@ -421,6 +470,64 @@ public class GameMap {
         return moveAgent(agent, currentPose.getPosition().afterStep(stepSize, newOrientation), newOrientation);
     }
 
+    private Pair<String, Vector2D> findClosestStructure(Agent agent, Class<? extends MapStructure> structureClass, Predicate<MapStructure> filter, String stateName) {
+        List<Cell> structures = getAllCells(
+                null,
+                structureClass, filter,
+                null, null, // No resource filtering
+                null, null, // No agent filtering
+                true
+        );
+
+        Vector2D agentPosition = agent.getPose().getPosition();
+        Vector2D closestPosition = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (Cell cell : structures) {
+            double distance = calculateDistance(agentPosition, cell.getPosition());
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestPosition = cell.getPosition();
+            }
+        }
+
+        return closestPosition != null ? new Pair<>(stateName, closestPosition) : null;
+    }
+
+    private double calculateDistance(Vector2D pos1, Vector2D pos2) {
+        return Math.sqrt(
+                Math.pow(pos1.getX() - pos2.getX(), 2) + Math.pow(pos1.getY() - pos2.getY(), 2)
+        );
+    }
+
+    public Pair<String, Vector2D> getClosestObjectiveSoldier(Agent agent) {
+        switch (agent.getState()) {
+            case "spawn":
+                return findClosestStructure(agent, Gate.class,
+                        gate -> ((Gate) gate).getTeam() == agent.getTeam(), "ally_gate");
+
+            case "ally_gate":
+                return findClosestStructure(agent, WarFlag.class, null, "war_flag");
+
+            case "war_flag":
+                return findClosestStructure(agent, Gate.class,
+                        gate -> ((Gate) gate).getTeam() != agent.getTeam(), "enemy_gate");
+
+            default:
+                return null;
+        }
+    }
+
+    public Pair<String, Vector2D> getClosestObjective(Agent agent) {
+        if (agent instanceof Soldier) {
+            return getClosestObjectiveSoldier(agent);
+//        } else if (agent instanceof Gatherer) {
+//            return getClosestObjectiveGatherer(agent);
+        }
+        return null; // Return null if the agent type is not recognized
+    }
+
+
     // Methods that were previously in the environment
     public boolean containsAgent(Agent agent) {
         return this.agentsList.containsKey(agent.getName());
@@ -430,7 +537,6 @@ public class GameMap {
                 .stream()
                 .collect(Collectors.toSet());
     }
-
     public void ensureAgentExists(Agent agent) {
         if (!containsAgent(agent)) {
             throw new IllegalArgumentException("No such agent: " + agent.getName());
@@ -462,15 +568,15 @@ public class GameMap {
                     .findFirst();
         }
     }
-    public boolean areAgentsNeighbours(Agent agent, Agent neighbour) {
+    public boolean areAgentsNeighbours(Agent agent, Agent neighbour, int range) {
         if (!containsAgent(agent) || !containsAgent(neighbour)) {
             return false;
         }
 
         BiFunction<Vector2D, Vector2D, Boolean> neighbourhoodFunction = (a, b) -> {
             Vector2D distanceVector = b.minus(a);
-            return Math.abs(distanceVector.getX()) <= agent.getAttackRange()
-                    && Math.abs(distanceVector.getY()) <= agent.getAttackRange();
+            return Math.abs(distanceVector.getX()) <= range
+                    && Math.abs(distanceVector.getY()) <= range;
         };
 
         Vector2D agentPosition = this.getAgentPosition(agent);
@@ -478,10 +584,10 @@ public class GameMap {
         return neighbourhoodFunction.apply(agentPosition, neighbourPosition);
     }
 
-    public Set<Agent> getAgentNeighbours(Agent agent) {
+    public Set<Agent> getAgentNeighbours(Agent agent, int range) {
         return this.getAllAgents().stream()
                 .filter(it -> !it.equals(agent))
-                .filter(other -> this.areAgentsNeighbours(agent, other))
+                .filter(other -> this.areAgentsNeighbours(agent, other, range))
                 .collect(Collectors.toSet());
     }
 }

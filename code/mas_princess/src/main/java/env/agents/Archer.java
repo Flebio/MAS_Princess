@@ -1,7 +1,7 @@
 package env.agents;
 
-public class Archer extends Agent {
+public class Archer extends Soldier {
     public Archer(String name, boolean team) {
-        super(name, team, 100, 2, 10);
+        super(name, team);
     }
 }

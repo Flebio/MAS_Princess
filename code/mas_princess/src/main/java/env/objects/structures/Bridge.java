@@ -7,7 +7,7 @@ public class Bridge extends MapStructure {
     private int remainingRespawnTime;
 
     public Bridge(double breakProbability, int respawnDuration) {
-        super(true, false, 3, 2, 1); // Bridges are breakable, not repairable, 3 cells wide, 2 cells tall, and have 1 life point
+        super(true, false, true,3, 2, 1, null); // Bridges are breakable, not repairable, 3 cells wide, 2 cells tall, and have 1 life point
         this.breakProbability = breakProbability;
         this.respawnDuration = respawnDuration;
         this.remainingRespawnTime = 0;

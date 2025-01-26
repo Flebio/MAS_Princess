@@ -32,9 +32,10 @@ public interface MapModel {
     boolean spawnAgent(Agent agent);
     boolean moveAgent(Agent agent, int stepSize, Direction direction);
     Optional<Agent> getAgentByPosition(Vector2D position);
-    Cell getCellByPosition(Vector2D position);
     public Optional<Agent> getAgentByName(String agName);
 
+    // Map
+    Cell getCellByPosition(Vector2D position);
     boolean isPositionInside(int x, int y);
     default boolean isPositionInside(Vector2D position) {
         return isPositionInside(position.getX(), position.getY());
@@ -45,9 +46,8 @@ public interface MapModel {
     default boolean isPositionOutside(Vector2D position) {
         return isPositionOutside(position.getX(), position.getY());
     }
-
-    boolean areAgentsNeighbours(Agent agent, Agent neighbour);
-    Set<Agent> getAgentNeighbours(Agent agent);
+    Pair<String, Vector2D> getClosestObjective(Agent agent);
+    Set<Agent> getAgentNeighbours(Agent agent, int range);
     default Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent) {
         Vector2D pos = this.getAgentPosition(agent);
         Orientation dir = this.getAgentDirection(agent);

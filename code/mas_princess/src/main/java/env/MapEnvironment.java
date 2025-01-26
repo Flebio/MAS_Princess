@@ -9,19 +9,22 @@ import jason.asSyntax.Structure;
 import java.util.Collection;
 
 public interface MapEnvironment {
-
     void init(String[] args);
 
-//    void notifyModelChangedToView();
+    void notifyModelChangedToView();
 
     Agent initializeAgentIfNeeded(String agentName);
 
     Collection<Literal> getPercepts(String agentName);
 
     boolean executeAction(String ag, Structure action);
+
     public Collection<Literal> personalBeliefsPercepts(Agent agent);
+
     Collection<Literal> surroundingPercepts(Agent agent);
 
-    Collection<Literal> neighboursPercepts(Agent agent);
+    Collection<Literal> inRangePercepts(Agent agent);
+
+    Collection<Literal> inSightPercepts(Agent agent);
 
 }

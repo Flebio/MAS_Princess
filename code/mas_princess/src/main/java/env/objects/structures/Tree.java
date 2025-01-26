@@ -6,7 +6,7 @@ public class Tree extends MapStructure {
     private int remainingRespawnTime;
 
     public Tree(int maxLife, int respawnDuration) {
-        super(true, false, 1, 1, maxLife); // Trees are breakable, not repairable, 1x1 cells
+        super(true, false, false,1, 1, maxLife, null); // Trees are breakable, not repairable, 1x1 cells
         this.respawnDuration = respawnDuration;
         this.remainingRespawnTime = 0;
     }

@@ -1,11 +1,10 @@
 package env.agents;
 
-import env.utils.AgentClass;
 import env.utils.Pose;
-
-public abstract class Agent {
+public abstract class Agent extends jason.asSemantics.Agent {
     private String name;
     private boolean team;  // True for team 1, false for team 2
+    private String state;
     private int hp;                   // Health points
     private int max_hp;
     private int attackRange;          // Attack range
@@ -16,6 +15,7 @@ public abstract class Agent {
     public Agent(String name, boolean team, int max_hp, int attackRange, int attackPower) {
         this.name = name;
         this.team = team;
+        this.state = "spawn";
         this.hp = max_hp;
         this.max_hp = max_hp;
         this.attackRange = attackRange;
@@ -38,6 +38,14 @@ public abstract class Agent {
 
     public void setTeam(boolean team) {
         this.team = team;
+    }
+
+    public String getState() {
+        return this.state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 
     public int getHp() {
@@ -94,7 +102,7 @@ public abstract class Agent {
 
     @Override
     public String toString() {
-        return String.format("Agent[Name: %s, Class: %s, Team: %s, HP: %d, Attack Range: %d, Attack Power: %d, Pose: %s]",
-                name, this.getClass().getSimpleName(), (team ? "Team 1" : "Team 2"), hp, attackRange, attackPower, pose);
+        return String.format("Agent[Name: %s, Class: %s, Team: %s, State: %s, HP: %d, Attack Range: %d, Attack Power: %d, Pose: %s]",
+                name, this.getClass().getSimpleName(), (team ? "Team 1" : "Team 2"), state, hp, attackRange, attackPower, pose);
     }
 }

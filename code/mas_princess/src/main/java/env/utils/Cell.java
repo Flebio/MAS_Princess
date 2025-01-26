@@ -31,7 +31,9 @@ public class Cell {
     public int getY() {
         return y;
     }
-
+    public Vector2D getPosition() {
+        return new Vector2D(x, y);
+    }
     public Zone getZoneType() {
         return zoneType;
     }
@@ -45,7 +47,7 @@ public class Cell {
     public void setStructure(MapStructure structure) {
         if (structure == null) {
             this.structure = null;
-        }else if (this.isOccupied()) {
+        }else if (this.isOccupied(null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.structure = structure;
@@ -58,7 +60,7 @@ public class Cell {
     public void setResource(Resource resource) {
         if (resource == null) {
             this.resource = null;
-        }else if (this.isOccupied()) {
+        }else if (this.isOccupied(null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.resource = resource;
@@ -73,16 +75,35 @@ public class Cell {
     public void setAgent(Agent agent) {
         if (agent == null) {
             this.agent = null;
-        }else if (this.isOccupied()) {
+        }else if (this.isOccupied(agent)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.agent = agent;
         }
     }
 
+    public boolean isOccupied(Agent movingAgent) {
+        // Check if the cell is completely empty
+        if (this.agent == null && this.structure == null && this.resource == null) {
+            return false;
+        }
 
-    public boolean isOccupied() {
-        return agent != null || structure != null || resource != null;
+        // If there is a structure, validate its conditions
+        if (structure != null) {
+            if (structure.isWalkable()) {
+                // Not a Gate -> Not occupied
+                if (!(structure instanceof Gate)) {
+                    return false;
+                }
+                // Is a Gate and belongs to the same team as the agent -> Not occupied
+                if (structure instanceof Gate && ((Gate) structure).getTeam() == movingAgent.getTeam()) {
+                    return false;
+                }
+            }
+        }
+
+        // If there is a resource, or the conditions above are not met -> Occupied
+        return true;
     }
 
 
