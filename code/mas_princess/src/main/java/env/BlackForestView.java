@@ -2,6 +2,7 @@ package env;
 
 import env.utils.*;
 import env.objects.structures.*;
+import env.objects.resources.*;
 import env.agents.*;
 
 import javax.swing.*;
@@ -14,12 +15,18 @@ public class BlackForestView extends JFrame implements MapView {
     private final MapModel model; // The map model
     private final Map<Vector2D, JLabel> cellsGrid = new HashMap<>(); // Mapping of positions to grid labels
     private final Map<Zone, ImageIcon> zoneSprites = new EnumMap<>(Zone.class); // Mapping of zone types to sprites
-    private final Map<AgentKey, ImageIcon> agentSprites = new HashMap<>();
+    private final Map<AgentKey, java.util.List<ImageIcon>> agentSprites = new HashMap<>();
     private final java.util.List<ImageIcon> battlefieldSprites = new ArrayList<>(); // List of possible battlefield sprites
     private final Map<Vector2D, ImageIcon> randomizedBattlefieldSprites = new HashMap<>(); // Randomized battlefield sprites
     private final DefaultListModel<Agent> agentListModel = new DefaultListModel<>(); // Model for the agent list
     private final JList<Agent> agentList = new JList<>(agentListModel); // List to display agents
     private JPanel agentStatusContainer; // Panel to display agent statuses
+    private final Map<Agent, Integer> agentAnimationFrames = new HashMap<>();
+    private final javax.swing.Timer animationTimer = new javax.swing.Timer(200, e -> updateAnimationFrames());
+
+    private final Map<Class<? extends Resource>, ImageIcon> resourceSprites = new HashMap<>();
+    private final Map<String, ImageIcon> princessSprites = new HashMap<>();
+
 
 
 
@@ -30,6 +37,8 @@ public class BlackForestView extends JFrame implements MapView {
         // Load sprites for zones and agents
         loadZoneSprites();
         loadAgentSprites();
+        loadResourceSprites();
+        animationTimer.start();
 
         // Set up the main container
         JPanel contentPane = new JPanel(new BorderLayout());
@@ -156,26 +165,95 @@ public class BlackForestView extends JFrame implements MapView {
     // Load sprites for each agent type
     private void loadAgentSprites() {
         // Sprites for Warriors
-        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/warrior_red_north.png")));
-        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/warrior_red_south.png")));
-        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/warrior_red_east.png")));
-        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/warrior_red_west.png")));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, true, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_red_west_3.png"))
+        ));
 
-        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/warrior_blue_north.png")));
-        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/warrior_blue_south.png")));
-        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/warrior_blue_east.png")));
-        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/warrior_blue_west.png")));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Warrior.class, false, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/warrior_blue_west_3.png"))
+        ));
 
         // Sprites for Archers
-        agentSprites.put(new AgentKey(Archer.class, true, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/archer_red_north.png")));
-        agentSprites.put(new AgentKey(Archer.class, true, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/archer_red_south.png")));
-        agentSprites.put(new AgentKey(Archer.class, true, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/archer_red_east.png")));
-        agentSprites.put(new AgentKey(Archer.class, true, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/archer_red_west.png")));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_red_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_red_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_red_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, true, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_red_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_red_west_3.png"))
+        ));
 
-        agentSprites.put(new AgentKey(Archer.class, false, Orientation.NORTH), new ImageIcon(getClass().getResource("/sprites/archer_blue_north.png")));
-        agentSprites.put(new AgentKey(Archer.class, false, Orientation.SOUTH), new ImageIcon(getClass().getResource("/sprites/archer_blue_south.png")));
-        agentSprites.put(new AgentKey(Archer.class, false, Orientation.EAST), new ImageIcon(getClass().getResource("/sprites/archer_blue_east.png")));
-        agentSprites.put(new AgentKey(Archer.class, false, Orientation.WEST), new ImageIcon(getClass().getResource("/sprites/archer_blue_west.png")));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Archer.class, false, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/archer_blue_west_3.png"))
+        ));
+    }
+
+    private void loadResourceSprites() {
+        princessSprites.put("blue", new ImageIcon(getClass().getResource("/sprites/princess_blue.png")));
+        princessSprites.put("red", new ImageIcon(getClass().getResource("/sprites/princess_red.png")));
     }
 
     // Refresh the view to display sprites based on zone types, structures, and agents
@@ -204,6 +282,25 @@ public class BlackForestView extends JFrame implements MapView {
                         }
                     }
 
+                    // Render resources if they exist
+                    Resource resource = cell.getResource();
+                    if (resource != null) {
+                        if (resource instanceof Princess princess) {
+                            // Use team-specific sprites for the Princess
+                            String teamColor = princess.getTeam() ? "red" : "blue";
+                            ImageIcon princessIcon = princessSprites.get(teamColor);
+                            if (princessIcon != null) {
+                                combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, princessIcon.getImage()));
+                            }
+                        } else {
+                            // Handle other resources (if applicable)
+                            ImageIcon resourceIcon = resourceSprites.get(resource.getClass());
+                            if (resourceIcon != null) {
+                                combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, resourceIcon.getImage()));
+                            }
+                        }
+                    }
+
                     // Render agents if they exist
                     Agent agent = cell.getAgent();
                     if (agent != null) {
@@ -222,6 +319,7 @@ public class BlackForestView extends JFrame implements MapView {
         repaint();
     }
 
+
     // Get the appropriate structure icon
     private ImageIcon getStructureIcon(MapStructure structure) {
         if (structure instanceof Gate) {
@@ -237,16 +335,20 @@ public class BlackForestView extends JFrame implements MapView {
     }
 
     // Get the appropriate agent icon
-    private ImageIcon getAgentIcon(Agent agent) {
-        Pose pose = agent.getPose();
-        if (pose == null) {
-            return null; // No pose means no icon
-        }
-        // Retrieve sprite based on agent class, team, and orientation
-        return agentSprites.get(new AgentKey(agent.getClass(), agent.getTeam(), pose.getOrientation()));
-    }
+        private ImageIcon getAgentIcon(Agent agent) {
+            Pose pose = agent.getPose();
+            if (pose == null) return null;
 
-    // Create a new image by combining existing image and overlay icon
+            AgentKey key = new AgentKey(agent.getClass(), agent.getTeam(), pose.getOrientation());
+            java.util.List<ImageIcon> sprites = agentSprites.get(key);
+            if (sprites == null || sprites.isEmpty()) return null;
+
+            int frame = agentAnimationFrames.getOrDefault(agent, 0);
+            return sprites.get(frame % sprites.size());
+        }
+
+
+        // Create a new image by combining existing image and overlay icon
     private Image createImageWithTransparency(ImageIcon baseImage, Image overlayImage) {
         Image background = baseImage != null ? baseImage.getImage() : null;
         int width = background != null ? background.getWidth(null) : overlayImage.getWidth(null);
@@ -265,6 +367,13 @@ public class BlackForestView extends JFrame implements MapView {
 
         g2d.dispose();
         return bufferedImage;
+    }
+    private void updateAnimationFrames() {
+        for (Agent agent : model.getAllAgents()) {
+            int currentFrame = agentAnimationFrames.getOrDefault(agent, 0);
+            agentAnimationFrames.put(agent, currentFrame + 1);
+        }
+        refreshBackground();
     }
 
     @Override

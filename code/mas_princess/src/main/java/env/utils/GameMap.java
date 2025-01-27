@@ -26,6 +26,7 @@ public class GameMap {
         this.map = new Cell[width][height];
         createZones();
         addStructures();
+        addResources();
     }
     public int getWidth() {
         return width;
@@ -49,6 +50,11 @@ public class GameMap {
         addBridge();
         addTrees();
     }
+    public void addResources() {
+        spawnPrincess(false);
+        spawnPrincess(true);
+    }
+
 
     private void createBaseZones() {
         int baseWidth = this.getWidth() / 12;
@@ -253,6 +259,35 @@ public class GameMap {
             selectedCell.setStructure(new Tree(50, 20)); // Create a tree with example health and resource values
         }
     }
+
+    public void spawnPrincess(boolean team) {
+        Zone opponentBaseZone = team ? Zone.BBASE : Zone.RBASE;
+
+        List<Cell> availableCells = getAllCells(
+                opponentBaseZone,
+                null, null,
+                null, null,
+                null, null,
+                true
+        );
+
+        if (availableCells.isEmpty()) {
+            throw new IllegalStateException("No available cells in the opponent's base zone to spawn the Princess.");
+        }
+
+        Cell randomCell = availableCells.get(RAND.nextInt(availableCells.size()));
+
+        Princess princess = new Princess(
+                team,
+                randomCell.getX(),
+                randomCell.getY()
+        );
+
+        randomCell.setResource(princess);
+        System.out.println("Princess spawned at: " + randomCell.getX() + ", " + randomCell.getY());
+
+    }
+
 
     public void printAgentList(Logger logger) {
         mapLock.readLock().lock();
