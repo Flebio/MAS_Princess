@@ -2,6 +2,7 @@ package env;
 
 import env.utils.*;
 import env.agents.*;
+import jason.asSyntax.Literal;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -99,6 +100,11 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
+    public boolean attackAgent(Agent attacking_agent, Agent target) {
+        return this.gameMap.attackAgent(attacking_agent, target);
+    }
+
+    @Override
     public boolean moveAgent(Agent agent, int stepSize, Direction direction) {
         return this.gameMap.moveAgent(agent, stepSize, direction);
     }
@@ -113,6 +119,11 @@ public class BlackForestModel implements MapModel {
     @Override
     public Pair<String, Vector2D> getClosestObjective(Agent agent) {
         return this.gameMap.getClosestObjective(agent);
+    }
+
+    @Override
+    public  boolean respawnAgent(Agent agent){
+        return this.gameMap.respawnAgent(agent);
     }
 
 }

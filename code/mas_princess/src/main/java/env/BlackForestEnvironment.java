@@ -8,6 +8,7 @@ import env.utils.*;
 
 import static env.utils.Direction.*;
 
+import jason.RevisionFailedException;
 import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.environment.Environment;
@@ -44,7 +45,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public Agent initializeAgentIfNeeded(String agentName) {
         Optional<Agent> optionalAgent = this.model.getAgentByName(agentName);
 
+//        if (!optionalAgent.isEmpty() && optionalAgent.get().getHp() == 0) {
+//            System.out.println("Eccolo:  " + optionalAgent);
+//        }
         if (optionalAgent.isEmpty()) {
+            //System.out.println("NECESSARIO");
             String[] parts = agentName.split("_");
 
             String type = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);  // Capitalize first letter of type
@@ -88,10 +93,9 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     @Override
     public Collection<Literal> getPercepts(String agentName) {
         Agent agent = initializeAgentIfNeeded(agentName);
-
         //        logger.info("Fetching percepts for agent: " + agentName);
 
-        // Combine percepts: surrounding tiles, neighbors, and personal beliefs
+        // Combine percepts: personal beliefs, surrounding tiles and neighbors.
         return Stream.concat(
                 personalBeliefsPercepts(agent).stream(),
                         Stream.concat(
@@ -109,17 +113,17 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public Collection<Literal> personalBeliefsPercepts(Agent agent) {
         Collection<Literal> personalBeliefs = new ArrayList<>();
 
-        personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
-        personalBeliefs.add(Literal.parseLiteral(String.format("zone_type(%s)", this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType().name().toLowerCase())));
+        //personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
         personalBeliefs.add(Literal.parseLiteral(String.format("position(%d, %d)", agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY())));
         personalBeliefs.add(Literal.parseLiteral(String.format("orientation(%s)", agent.getPose().getOrientation().name().toLowerCase())));
 
         Pair<String, Vector2D> closest_objective = this.model.getClosestObjective(agent);
         if (agent.getPose().getPosition().equals(closest_objective.getSecond())) {
             agent.setState(closest_objective.getFirst());
-            closest_objective = this.model.getClosestObjective(agent);
+//            closest_objective = this.model.getClosestObjective(agent);
         }
 
+        personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
         personalBeliefs.add(Literal.parseLiteral(String.format("objective(%s)", closest_objective.getFirst())));
         personalBeliefs.add(Literal.parseLiteral(String.format("objective_position(%d,%d)", closest_objective.getSecond().getX(), closest_objective.getSecond().getY())));
 
@@ -136,6 +140,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Collection<Literal> surroundings = model.getAgentSurroundingPositions(agent).entrySet().stream()
                 .map(entry -> proximityPerceptFor(agent, entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+        surroundings.add(Literal.parseLiteral(String.format("zone_type(%s)", this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType().name().toLowerCase())));
 //        logger.info("Surroundings(" + agent.getName() + ") -> " + surroundings);
         return surroundings;
     }
@@ -143,7 +148,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     private Literal proximityPerceptFor(Agent agent, Direction direction, Vector2D position) {
         Cell surroundingCell = this.model.getCellByPosition(position);
 
-        if (surroundingCell == null) {
+        if (surroundingCell == null || surroundingCell.getZoneType() == Zone.OUT_OF_MAP) {
             return Literal.parseLiteral(String.format("obstacle(%s)", direction.name().toLowerCase()));
         }
 
@@ -171,7 +176,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Collection<Literal> in_range = model.getAgentNeighbours(agent, agent.getAttackRange()).stream()
                 .map(it -> {
                     String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_range" : "enemy_in_range";
-                    return String.format("%s(%s)", relation, it.getName());
+                    return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
                 })
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList());
@@ -185,7 +190,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Collection<Literal> in_sight = model.getAgentNeighbours(agent, 5).stream()
                 .map(it -> {
                     String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_sight" : "enemy_in_sight";
-                    return String.format("%s(%s)", relation, it.getName());
+                    return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
                 })
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList());
@@ -197,13 +202,13 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
 
-        logger.info(ag + " does action: " + action.toString());
+        //logger.info(ag + " does action: " + action.toString());
 
         final boolean result;
         if (movementActions.containsValue(action)) {
             if (action.equals(movementActions.get("random"))) {
                 Direction randomDirection = Direction.random();
-                logger.info("Chosen direction for random movement: " + randomDirection);
+                //logger.info("Chosen direction for random movement: " + randomDirection);
                 result = model.moveAgent(agent, 1, randomDirection);
                 notifyModelChangedToView();
             } else {
@@ -214,20 +219,39 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         } else if (absoluteMovementActions.containsValue(action)) {
             if (action.equals(absoluteMovementActions.get("random"))) {
                 Direction randomAbsoluteDirection = getRandomAbsoluteDirection(agent);
-                logger.info("Executing random absolute movement resolved to " + randomAbsoluteDirection);
+                //logger.info("Executing random absolute movement resolved to " + randomAbsoluteDirection);
                 result = model.moveAgent(agent, 1, randomAbsoluteDirection);
                 notifyModelChangedToView();
             } else {
                 Direction absoluteDirection = getDirectionForAbsoluteMove(agent, action);
-                logger.info("Executing absolute movement: " + action + " resolved to " + absoluteDirection);
+                //logger.info("Executing absolute movement: " + action + " resolved to " + absoluteDirection);
                 result = model.moveAgent(agent, 1, absoluteDirection);
                 notifyModelChangedToView();
             }
-        } else {
+        } else if (action.toString().contains("attack_enemy")) {
+            Agent target = initializeAgentIfNeeded(action.getTerm(0).toString());
+            result = model.attackAgent(agent, target);
+            notifyModelChangedToView();
+        } else if (action.toString().contains("respawn")) {
+            result = model.respawnAgent(agent);
+//            try { // Wait time to be able to get back in the game.
+//                Thread.sleep(5000L);
+//            } catch (InterruptedException ignored) {
+//            }
+        } else{
             logger.warning("Unknown action: " + action);
             return false;
         }
 
+        try {
+//            Thread.sleep(1000L / model.getFPS());
+            if (action.toString().contains("respawn")) {
+                Thread.sleep(5000L / model.getFPS());
+            } else {
+                Thread.sleep(500L / model.getFPS());
+            }
+        } catch (InterruptedException ignored) {
+        }
         return result;
     }
 

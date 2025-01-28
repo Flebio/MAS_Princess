@@ -30,10 +30,12 @@ public interface MapModel {
     }
 
     boolean spawnAgent(Agent agent);
+    boolean attackAgent(Agent attacking_agent, Agent target);
     boolean moveAgent(Agent agent, int stepSize, Direction direction);
     Optional<Agent> getAgentByPosition(Vector2D position);
     public Optional<Agent> getAgentByName(String agName);
 
+    public  boolean respawnAgent(Agent agent);
     // Map
     Cell getCellByPosition(Vector2D position);
     boolean isPositionInside(int x, int y);

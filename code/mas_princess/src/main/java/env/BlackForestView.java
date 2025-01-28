@@ -27,6 +27,12 @@ public class BlackForestView extends JFrame implements MapView {
     private final Map<Class<? extends Resource>, ImageIcon> resourceSprites = new HashMap<>();
     private final Map<String, ImageIcon> princessSprites = new HashMap<>();
 
+    private int outOfMapAnimationFrame = 0; // Track animation frame for OUT_OF_MAP zone
+    private final ImageIcon[] outOfMapSprites = new ImageIcon[2]; // Hold river sprites for animation
+    private final javax.swing.Timer outOfMapAnimationTimer = new javax.swing.Timer(500, e -> {
+        outOfMapAnimationFrame = (outOfMapAnimationFrame + 1) % 2; // Toggle between 0 and 1
+        refreshBackground(); // Refresh map with the new frame
+    });
 
 
 
@@ -39,6 +45,7 @@ public class BlackForestView extends JFrame implements MapView {
         loadAgentSprites();
         loadResourceSprites();
         animationTimer.start();
+        outOfMapAnimationTimer.start();
 
         // Set up the main container
         JPanel contentPane = new JPanel(new BorderLayout());
@@ -55,6 +62,8 @@ public class BlackForestView extends JFrame implements MapView {
 
         setContentPane(contentPane);
         pack();
+
+        setResizable(false);
 
         // Refresh the view initially
         refreshBackground();
@@ -90,9 +99,8 @@ public class BlackForestView extends JFrame implements MapView {
         panel.setBorder(BorderFactory.createTitledBorder("Agent Status"));
 
         // Use WrapLayout for the agent container
-        JPanel agentStatusContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 10));
-        JScrollPane scrollPane = new JScrollPane(agentStatusContainer);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        JPanel agentStatusContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 40));
+        panel.add(agentStatusContainer, BorderLayout.CENTER); // Add the container directly
 
         // Save the container for dynamic updates
         this.agentStatusContainer = agentStatusContainer;
@@ -107,8 +115,8 @@ public class BlackForestView extends JFrame implements MapView {
 
         for (Agent agent : model.getAllAgents()) {
             // Create a label for each agent
-            JLabel agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s</html>",
-                    agent.getName(), agent.getHp(), agent.getPose().getPosition()));
+            JLabel agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
+                    agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
 
             // Set agent icon
             ImageIcon agentIcon = getAgentIcon(agent);
@@ -136,7 +144,7 @@ public class BlackForestView extends JFrame implements MapView {
                 Agent agent = (Agent) value;
 
                 // Display agent name, HP, and position
-                label.setText(String.format("%s: HP=%d, Pos=%s", agent.getName(), agent.getHp(), agent.getPose().getPosition()));
+                label.setText(String.format("%s: HP=%d, Pos=%s, St=%s", agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
 
                 // Set the agent's icon
                 ImageIcon agentIcon = getAgentIcon(agent);
@@ -152,9 +160,12 @@ public class BlackForestView extends JFrame implements MapView {
     private void loadZoneSprites() {
         zoneSprites.put(Zone.BBASE, new ImageIcon(getClass().getResource("/sprites/bbase.png")));
         zoneSprites.put(Zone.RBASE, new ImageIcon(getClass().getResource("/sprites/rbase.png")));
-        zoneSprites.put(Zone.OUT_OF_MAP, new ImageIcon(getClass().getResource("/sprites/river.png")));
+        //zoneSprites.put(Zone.OUT_OF_MAP, new ImageIcon(getClass().getResource("/sprites/river.png")));
+        // Load animated sprites for OUT_OF_MAP
+        outOfMapSprites[0] = new ImageIcon(getClass().getResource("/sprites/river1.png"));
+        outOfMapSprites[1] = new ImageIcon(getClass().getResource("/sprites/river2.png"));
 
-        // Add multiple battlefield sprites
+    // Add multiple battlefield sprites
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield1.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield2.png")));
@@ -249,7 +260,93 @@ public class BlackForestView extends JFrame implements MapView {
                 new ImageIcon(getClass().getResource("/sprites/archer_blue_west_2.png")),
                 new ImageIcon(getClass().getResource("/sprites/archer_blue_west_3.png"))
         ));
+
+        // Sprites for Priests
+        agentSprites.put(new AgentKey(Priest.class, true, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_red_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, true, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_red_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, true, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_red_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, true, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_red_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_red_west_3.png"))
+        ));
+
+        agentSprites.put(new AgentKey(Priest.class, false, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, false, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, false, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Priest.class, false, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/priest_blue_west_3.png"))
+        ));
+        // Sprites for Gatherers
+        agentSprites.put(new AgentKey(Gatherer.class, true, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, true, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, true, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, true, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_red_west_3.png"))
+        ));
+
+        agentSprites.put(new AgentKey(Gatherer.class, false, Orientation.NORTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_north_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_north_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_north_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, false, Orientation.SOUTH), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_south_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_south_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_south_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, false, Orientation.EAST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_east_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_east_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_east_3.png"))
+        ));
+        agentSprites.put(new AgentKey(Gatherer.class, false, Orientation.WEST), Arrays.asList(
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_west_1.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_west_2.png")),
+                new ImageIcon(getClass().getResource("/sprites/gatherer_blue_west_3.png"))
+        ));
     }
+
 
     private void loadResourceSprites() {
         princessSprites.put("blue", new ImageIcon(getClass().getResource("/sprites/princess_blue.png")));
@@ -266,14 +363,20 @@ public class BlackForestView extends JFrame implements MapView {
                 if (cellLabel != null) {
                     Cell cell = model.getCellByPosition(position);
                     Zone zoneType = cell.getZoneType();
+                    ImageIcon zoneSprite;
 
-                    // Get the zone sprite
-                    ImageIcon zoneSprite = zoneType == Zone.BATTLEFIELD
-                            ? randomizedBattlefieldSprites.get(position)
-                            : zoneSprites.get(zoneType);
+                    // Handle animation for OUT_OF_MAP zone
+                    if (zoneType == Zone.OUT_OF_MAP) {
+                        zoneSprite = outOfMapSprites[outOfMapAnimationFrame];
+                    } else {
+                        zoneSprite = zoneType == Zone.BATTLEFIELD
+                                ? randomizedBattlefieldSprites.get(position)
+                                : zoneSprites.get(zoneType);
+                    }
+
                     ImageIcon combinedImage = new ImageIcon(createImageWithTransparency(null, zoneSprite.getImage()));
 
-                    // Render structures if they exist
+                    // Render structures, resources, and agents
                     MapStructure structure = cell.getStructure();
                     if (structure != null) {
                         ImageIcon structureIcon = getStructureIcon(structure);
@@ -282,18 +385,15 @@ public class BlackForestView extends JFrame implements MapView {
                         }
                     }
 
-                    // Render resources if they exist
                     Resource resource = cell.getResource();
                     if (resource != null) {
                         if (resource instanceof Princess princess) {
-                            // Use team-specific sprites for the Princess
                             String teamColor = princess.getTeam() ? "red" : "blue";
                             ImageIcon princessIcon = princessSprites.get(teamColor);
                             if (princessIcon != null) {
                                 combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, princessIcon.getImage()));
                             }
                         } else {
-                            // Handle other resources (if applicable)
                             ImageIcon resourceIcon = resourceSprites.get(resource.getClass());
                             if (resourceIcon != null) {
                                 combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, resourceIcon.getImage()));
@@ -301,7 +401,6 @@ public class BlackForestView extends JFrame implements MapView {
                         }
                     }
 
-                    // Render agents if they exist
                     Agent agent = cell.getAgent();
                     if (agent != null) {
                         ImageIcon agentIcon = getAgentIcon(agent);
@@ -315,7 +414,6 @@ public class BlackForestView extends JFrame implements MapView {
                 }
             }
         }
-
         repaint();
     }
 

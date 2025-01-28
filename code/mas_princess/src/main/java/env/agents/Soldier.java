@@ -1,7 +1,8 @@
 package env.agents;
 
-public class Soldier extends Agent {
-    public Soldier(String name, boolean team) {
-        super(name, team, 100, 2, 10);
+public abstract class Soldier extends Agent {
+    // Constructor
+    public Soldier(String name, boolean team, int max_hp, int attackRange, int attackPower) {
+        super(name, team, max_hp, attackRange, attackPower);
     }
 }

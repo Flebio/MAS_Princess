@@ -76,7 +76,6 @@ public class compute_percentages extends DefaultInternalAction {
         currentAgent.delBel(current_p1);
         currentAgent.delBel(current_p2);
 
-
         // QUELLO CHE DEVO FARE QUI è: SE NON ESISTE NELLA BB FREE(g), DOVE g CORRISPONDE AL MAPPING DATO DALL'ORIENTAMENTO
         // E DALLA DIREZIONE (up, down, left or right) DOVE CI SI VUOLE SPOSTARE, SIGNIFICA CHE LA CASELLA NON è LIBERA.
         // PER TANTO SI METTE QUELLA PROBABILITà A 0. DOPO DI CHE VA MODIFICATO L'AGENTE, PERCHé BISOGNA CONTROLLARE ENTRAMBE
@@ -95,7 +94,9 @@ public class compute_percentages extends DefaultInternalAction {
         Boolean test_direction_p1_1 = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("free(%s)", abs_direction_p1))).orElse(false);
         Boolean test_direction_p1_g = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("gate(%s)", abs_direction_p1))).orElse(false);
         Boolean test_direction_p1_b = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("bridge(%s)", abs_direction_p1))).orElse(false);
-        if (!test_direction_p1_1 && !test_direction_p1_g && !test_direction_p1_b)  {
+        Boolean test_direction_p1_e = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("empty(%s)", abs_direction_p1))).orElse(false);
+//        Boolean test_direction_p1_a = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("surrounding_ally(%s)", abs_direction_p1))).orElse(false);
+        if (!test_direction_p1_1 && !test_direction_p1_g && !test_direction_p1_b && !test_direction_p1_e) { // && test_direction_p1_a)  {
             p1 = 0.0;
         }
 
@@ -103,7 +104,9 @@ public class compute_percentages extends DefaultInternalAction {
         Boolean test_direction_p2_1 = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("free(%s)", abs_direction_p2))).orElse(false);
         Boolean test_direction_p2_g = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("gate(%s)", abs_direction_p2))).orElse(false);
         Boolean test_direction_p2_b = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("bridge(%s)", abs_direction_p2))).orElse(false);
-        if (!test_direction_p2_1 && !test_direction_p2_g && !test_direction_p2_b)  {
+        Boolean test_direction_p2_e = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("empty(%s)", abs_direction_p2))).orElse(false);
+//        Boolean test_direction_p2_a = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("surrounding_ally(%s)", abs_direction_p2))).orElse(false);
+        if (!test_direction_p2_1 && !test_direction_p2_g && !test_direction_p2_b && !test_direction_p2_e) {// && test_direction_p2_a)  {
             p2 = 0.0;
         }
 

@@ -44,7 +44,6 @@ public class GameMap {
         createRiver();
         createBattlefield();
     }
-
     public void addStructures() {
         addWallsAndGates();
         addBridge();
@@ -54,8 +53,6 @@ public class GameMap {
         spawnPrincess(false);
         spawnPrincess(true);
     }
-
-
     private void createBaseZones() {
         int baseWidth = this.getWidth() / 12;
         int baseHeight = this.getHeight() / 4;
@@ -72,13 +69,13 @@ public class GameMap {
         int centerY = this.getHeight() / 2;
 
         for (int x = centerX - 1; x <= centerX + 1; x++) {
-            for (int y = centerY; y < this.getHeight(); y++) {
+            for (int y = 0; y < this.getHeight(); y++) {
                 map[x][y] = new Cell(Zone.OUT_OF_MAP, x, y);
             }
         }
 
-        createDiagonal(centerX, centerY, -1);
-        createDiagonal(centerX, centerY, 1);
+        //createDiagonal(centerX, centerY, -1);
+        //createDiagonal(centerX, centerY, 1);
     }
     private void createDiagonal(int centerX, int centerY, int direction) {
         for (int x = centerX + direction; x >= 0 && x < this.getWidth(); x += direction) {
@@ -91,31 +88,10 @@ public class GameMap {
             }
         }
     }
-
-//    private void createBattlefield() {
-//        int crossableY1 = (this.getHeight() / 3) - 1;
-//        int crossableY2 = crossableY1 - 1;
-//
-//        for (int x = 0; x < this.getWidth(); x++) {
-//            if (map[x][crossableY1] != null && map[x][crossableY1].getZoneType() == Zone.OUT_OF_MAP) {
-//                map[x][crossableY1] = new Cell(Zone.BATTLEFIELD, x, crossableY1);
-//            }
-//            if (map[x][crossableY2] != null && map[x][crossableY2].getZoneType() == Zone.OUT_OF_MAP) {
-//                map[x][crossableY2] = new Cell(Zone.BATTLEFIELD, x , crossableY2);
-//            }
-//        }
-//
-//        for (int x = 0; x < this.getWidth(); x++) {
-//            for (int y = 0; y < this.getHeight(); y++) {
-//                if (map[x][y] == null) {
-//                    map[x][y] = new Cell(Zone.BATTLEFIELD, x, y);
-//                }
-//            }
-//        }
-//    }
     private void createBattlefield() {
-        int crossableY1 = (this.getHeight() / 3) - 1;
+        int crossableY1 = (this.getHeight() / 3) ;
         int crossableY2 = crossableY1 - 1;
+        int crossableY3 = crossableY1 - 2;
         int middleX = this.getWidth() / 2;
 
         boolean flagPlaced = false;
@@ -127,6 +103,9 @@ public class GameMap {
             if (map[x][crossableY2] != null && map[x][crossableY2].getZoneType() == Zone.OUT_OF_MAP) {
                 map[x][crossableY2] = new Cell(Zone.BATTLEFIELD, x, crossableY2);
             }
+            if (map[x][crossableY3] != null && map[x][crossableY3].getZoneType() == Zone.OUT_OF_MAP) {
+                map[x][crossableY3] = new Cell(Zone.BATTLEFIELD, x, crossableY2);
+            }
         }
 
         for (int x = 0; x < this.getWidth(); x++) {
@@ -135,19 +114,22 @@ public class GameMap {
                     map[x][y] = new Cell(Zone.BATTLEFIELD, x, y);
                 }
             }
-            // Place WarFlags where the battlefield crosses the river
+            // Place Emptys where the battlefield crosses the river
             if (!flagPlaced && x == middleX) {
                 if (map[x][crossableY1] != null) {
-                    map[x][crossableY1].setStructure(new WarFlag());
+                    map[x][crossableY1].setStructure(new Empty());
                 }
                 if (map[x][crossableY2] != null) {
-                    map[x][crossableY2].setStructure(new WarFlag());
+                    map[x][crossableY2].setStructure(new Empty());
+                }
+
+                if (map[x][crossableY3] != null) {
+                    map[x][crossableY3].setStructure(new Empty());
                 }
                 flagPlaced = true;
             }
         }
     }
-
     private void addWallsAndGates() {
         int baseWidth = this.getWidth() / 12;
         int baseHeight = this.getHeight() / 4;
@@ -190,6 +172,7 @@ public class GameMap {
         for (int x = bridgeXStart; x <= bridgeXEnd; x++) {
             for (int y = bridgeY; y < bridgeY + 2; y++) {
                 map[x][y].setStructure(bridge);
+                map[x][y].setZoneType(Zone.BATTLEFIELD);
             }
         }
     }
@@ -199,15 +182,14 @@ public class GameMap {
                 && map[x][y].getStructure() == null
                 && map[x][y].getZoneType() == Zone.BATTLEFIELD;
     }
-
     private void addTrees() {
         // Number of trees to spawn (e.g., ~5% of the map area)
         int treeCount = (this.width * this.height) / 15;
 
         // Define spawn area dimensions
-        int northSpawnAreaWidth = this.getWidth() / 3; // Width for each northern area (smaller)
-        int southSpawnAreaWidth = this.getWidth() / 2; // Width for each southern area (larger)
-        int spawnAreaHeight = this.getHeight() / 4; // Height for each area (same for all)
+        int northSpawnAreaWidth = this.getWidth() / 2 -1; // Width for each northern area
+        int southSpawnAreaWidth = this.getWidth() / 2 -1; // Width for each southern area
+        int spawnAreaHeight = this.getHeight() / 4 - 1; // Height for each area (same for all)
 
         // Define bounds for the four areas (northern and southern)
         int northStartY = 0; // Northern areas start at the top row
@@ -259,11 +241,11 @@ public class GameMap {
             selectedCell.setStructure(new Tree(50, 20)); // Create a tree with example health and resource values
         }
     }
-
     public void spawnPrincess(boolean team) {
         Zone opponentBaseZone = team ? Zone.BBASE : Zone.RBASE;
 
-        List<Cell> availableCells = getAllCells(
+        // Get all cells in the opponent's base zone
+        List<Cell> allCellsInBaseZone = getAllCells(
                 opponentBaseZone,
                 null, null,
                 null, null,
@@ -271,12 +253,33 @@ public class GameMap {
                 true
         );
 
-        if (availableCells.isEmpty()) {
+        if (allCellsInBaseZone.isEmpty()) {
             throw new IllegalStateException("No available cells in the opponent's base zone to spawn the Princess.");
         }
 
-        Cell randomCell = availableCells.get(RAND.nextInt(availableCells.size()));
+        // Determine vertical range (y-coordinates) for the base zone
+        int minY = allCellsInBaseZone.stream().mapToInt(Cell::getY).min().orElseThrow();
+        int maxY = allCellsInBaseZone.stream().mapToInt(Cell::getY).max().orElseThrow();
 
+        // Calculate the sector boundaries
+        int sectorHeight = (maxY - minY + 1) / 3;
+        int firstSectorEnd = minY + sectorHeight;
+        int thirdSectorStart = maxY - sectorHeight + 1;
+
+        // Filter cells to include only the first and third sectors
+        List<Cell> availableCells = allCellsInBaseZone.stream()
+                .filter(cell -> {
+                    int y = cell.getY();
+                    return (y < firstSectorEnd) || (y >= thirdSectorStart);
+                })
+                .toList();
+
+        if (availableCells.isEmpty()) {
+            throw new IllegalStateException("No available cells in the specified sectors to spawn the Princess.");
+        }
+
+        // Randomly select a cell and spawn the princess
+        Cell randomCell = availableCells.get(RAND.nextInt(availableCells.size()));
         Princess princess = new Princess(
                 team,
                 randomCell.getX(),
@@ -285,9 +288,7 @@ public class GameMap {
 
         randomCell.setResource(princess);
         System.out.println("Princess spawned at: " + randomCell.getX() + ", " + randomCell.getY());
-
     }
-
 
     public void printAgentList(Logger logger) {
         mapLock.readLock().lock();
@@ -301,7 +302,6 @@ public class GameMap {
             mapLock.readLock().unlock();
         }
     }
-
     public void printMap(Logger logger) {
         mapLock.readLock().lock();
         try {
@@ -318,7 +318,6 @@ public class GameMap {
             mapLock.readLock().unlock();
         }
     }
-
     public Cell getCellByPosition(int x, int y) {
         mapLock.readLock().lock();
         try {
@@ -330,7 +329,6 @@ public class GameMap {
             mapLock.readLock().unlock();
         }
     }
-
     public Cell getCellByPosition(Vector2D position) {
         return this.getCellByPosition(position.getX(), position.getY());
     }
@@ -387,7 +385,6 @@ public class GameMap {
         }
     }
 
-
     // AGENTS MANAGEMENT
     // NEWLY IMPLEMENTED METHODS
     public void setAgentPosition(Agent agent, Vector2D position) {
@@ -418,7 +415,17 @@ public class GameMap {
                 }
                 return false;
             }
-            this.getCellByPosition(x, y).setAgent(agent);
+            mapLock.writeLock().lock();
+            try {
+                Cell newCell = this.getCellByPosition(x, y);
+                if (!newCell.isOccupied(agent)) {
+                    newCell.setAgent(agent);
+                }
+            } finally {
+                mapLock.writeLock().unlock();
+            }
+
+//            this.getCellByPosition(x, y).setAgent(agent);
             agent.setPose(new Pose(Vector2D.of(x,y), orientation));
             this.agentsList.put(agent.getName(), agent);
 
@@ -439,17 +446,43 @@ public class GameMap {
                 true
         );
 
+
         if (availableCells.isEmpty()) {
             return false; // No available cells in the base
         }
 
         // Select a random cell from the available cells
         Cell randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
+        while(randomCellPosition.isOccupied(agent)) {
+            randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
+        }
         Orientation randomOrientation = Orientation.random();
 
         return setAgentPose(agent, randomCellPosition.getX(), randomCellPosition.getY(), randomOrientation);
     }
+    public boolean respawnAgent(Agent agent){
 
+        // Synchronize access to agentsList
+//        synchronized (agentsList) {
+//            // Remove the agent from the agentsList
+//            agentsList.remove(agent.getName());
+//        }
+
+        mapLock.writeLock().lock();
+        try {
+            Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
+            if (agentCell != null) {
+                agentCell.clearAgent();
+            }
+        } finally {
+            mapLock.writeLock().unlock();
+        }
+
+        agent.setHp(agent.getMaxHp());
+        agent.setState("spawn");
+        spawnAgent(agent);
+        return true;
+    }
     public boolean moveAgent(Agent agent, Vector2D newPosition, Orientation newOrientation) {
         mapLock.writeLock().lock();
         try {
@@ -461,6 +494,10 @@ public class GameMap {
 
             Cell currentCell = map[currentPose.getPosition().getX()][currentPose.getPosition().getY()];
             Cell targetCell = map[newPosition.getX()][newPosition.getY()];
+
+            if (targetCell.getZoneType() == Zone.OUT_OF_MAP) {
+                return false;
+            }
 
             synchronized (currentCell) {
                 synchronized (targetCell) {
@@ -504,6 +541,13 @@ public class GameMap {
         // Delegate to the main method
         return moveAgent(agent, currentPose.getPosition().afterStep(stepSize, newOrientation), newOrientation);
     }
+    public boolean attackAgent(Agent attacking_agent, Agent target) {
+        synchronized (target) {
+            int newHp = target.getHp() - attacking_agent.getAttackPower();
+            target.setHp(newHp);
+        }
+        return true;
+    }
 
     private Pair<String, Vector2D> findClosestStructure(Agent agent, Class<? extends MapStructure> structureClass, Predicate<MapStructure> filter, String stateName) {
         List<Cell> structures = getAllCells(
@@ -513,6 +557,7 @@ public class GameMap {
                 null, null, // No agent filtering
                 true
         );
+
 
         Vector2D agentPosition = agent.getPose().getPosition();
         Vector2D closestPosition = null;
@@ -528,31 +573,38 @@ public class GameMap {
 
         return closestPosition != null ? new Pair<>(stateName, closestPosition) : null;
     }
-
     private double calculateDistance(Vector2D pos1, Vector2D pos2) {
         return Math.sqrt(
                 Math.pow(pos1.getX() - pos2.getX(), 2) + Math.pow(pos1.getY() - pos2.getY(), 2)
         );
     }
-
     public Pair<String, Vector2D> getClosestObjectiveSoldier(Agent agent) {
         switch (agent.getState()) {
             case "spawn":
                 return findClosestStructure(agent, Gate.class,
-                        gate -> ((Gate) gate).getTeam() == agent.getTeam(), "ally_gate");
+                        gate -> ((Gate) gate).getTeam() == agent.getTeam(), "choose_path");
+            case "choose_path":
+//                int offset = (agent.getTeam() == true) ? -1 : +1;
+                if (RAND.nextDouble() < 95) { // 95% probability
+                    return new Pair("towards_land_passage", new Vector2D(agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY()));
+                } else { // 5% probability
+                    return new Pair("towards_bridge", new Vector2D(agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY()));
+                }
 
-            case "ally_gate":
-                return findClosestStructure(agent, WarFlag.class, null, "war_flag");
+            case "towards_bridge":
+                return findClosestStructure(agent, Bridge.class, null, "bridge_reached");
 
-            case "war_flag":
+            case "towards_land_passage":
+                return findClosestStructure(agent, Empty.class, null, "land_passage_reached");
+
+            case "land_passage_reached", "bridge_reached":
                 return findClosestStructure(agent, Gate.class,
-                        gate -> ((Gate) gate).getTeam() != agent.getTeam(), "enemy_gate");
+                        gate -> ((Gate) gate).getTeam() != agent.getTeam(), "enemy_gate_reached");
 
             default:
                 return null;
         }
     }
-
     public Pair<String, Vector2D> getClosestObjective(Agent agent) {
         if (agent instanceof Soldier) {
             return getClosestObjectiveSoldier(agent);
@@ -565,12 +617,16 @@ public class GameMap {
 
     // Methods that were previously in the environment
     public boolean containsAgent(Agent agent) {
-        return this.agentsList.containsKey(agent.getName());
+        synchronized (this.agentsList) {
+            return this.agentsList.containsKey(agent.getName());
+        }
     }
     public Set<Agent> getAllAgents() {
-        return this.agentsList.values()
-                .stream()
-                .collect(Collectors.toSet());
+        synchronized (this.agentsList) {
+            return this.agentsList.values()
+                    .stream()
+                    .collect(Collectors.toSet());
+        }
     }
     public void ensureAgentExists(Agent agent) {
         if (!containsAgent(agent)) {

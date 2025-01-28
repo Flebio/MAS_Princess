@@ -56,6 +56,10 @@ public abstract class Agent extends jason.asSemantics.Agent {
         this.hp = hp;
     }
 
+    public int getMaxHp() {
+        return max_hp;
+    }
+
     public int getAttackRange() {
         return attackRange;
     }
