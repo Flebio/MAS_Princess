@@ -10,6 +10,7 @@ public abstract class MapStructure {
     private final int max_hp;
     final Boolean team;
     private int hp;
+    private Pose pose;
 
     public MapStructure(boolean breakable, boolean repairable, Boolean walkable, int width, int height, int max_hp, Boolean team) {
         this.breakable = breakable;
@@ -20,6 +21,7 @@ public abstract class MapStructure {
         this.max_hp = max_hp;
         this.hp = max_hp;
         this.team = team;
+        this.pose = pose;
     }
 
     public boolean isBreakable() {
@@ -31,6 +33,14 @@ public abstract class MapStructure {
     }
     public boolean isWalkable() {
         return walkable;
+    }
+
+    public Pose getPose() {
+        return pose;
+    }
+
+    public void setPose(Pose pose) {
+        this.pose = pose;
     }
 
     public int getWidth() {

@@ -2,6 +2,7 @@ package env;
 
 import env.utils.*;
 import env.agents.*;
+import env.objects.structures.*;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -50,6 +51,8 @@ public interface MapModel {
     }
     Pair<String, Vector2D> getClosestObjective(Agent agent);
     Set<Agent> getAgentNeighbours(Agent agent, int range);
+    Set<Gate> getEnemyGateNeighbours(Agent agent, int range);
+    Set<Tree> getTreeNeighbours(Agent agent, int range);
     default Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent) {
         Vector2D pos = this.getAgentPosition(agent);
         Orientation dir = this.getAgentDirection(agent);

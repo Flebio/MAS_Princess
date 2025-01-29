@@ -17,6 +17,7 @@ public class GameMap {
     private final int height;
     private final Cell[][] map;
     private final Map<String, Agent> agentsList = Collections.synchronizedMap(new HashMap<>());
+    private final Set<MapStructure> structuresList = Collections.synchronizedSet(new HashSet<>());
     private final ReadWriteLock mapLock = new ReentrantReadWriteLock();
     private static final Random RAND = new Random();
 
@@ -681,4 +682,48 @@ public class GameMap {
                 .filter(other -> this.areAgentsNeighbours(agent, other, range))
                 .collect(Collectors.toSet());
     }
+
+    // Retrieve gates within range that belong to the enemy team
+    public Set<Gate> getEnemyGateNeighbours(Agent agent, int range) {
+        return this.getAllGates().stream()
+                .filter(gate -> !gate.getTeam().equals(agent.getTeam())) // Only enemy gates
+                .filter(gate -> this.isStructureInRange(agent, gate, range)) // Within range
+                .collect(Collectors.toSet());
+    }
+
+
+    public Set<Tree> getTreeNeighbours(Agent agent, int range) {
+        return this.getAllTrees().stream()
+                .filter(tree -> this.isStructureInRange(agent, tree, range))
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isStructureInRange(Agent agent, MapStructure structure, int range) {
+        int dx = Math.abs(agent.getPose().getPosition().getX() - structure.getX());
+        int dy = Math.abs(agent.getPose().getPosition().getY() - structure.getY());
+        return dx + dy <= range; // Manhattan distance
+    }
+
+    public Set<Gate> getAllGates() {
+        return this.getAllStructures().stream()
+                .filter(structure -> structure instanceof Gate)
+                .map(structure -> (Gate) structure)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Tree> getAllTrees() {
+        return this.getAllStructures().stream()
+                .filter(structure -> structure instanceof Tree)
+                .map(structure -> (Tree) structure)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<MapStructure> getAllStructures() {
+        synchronized (this.structuresList) {
+            return new HashSet<>(this.structuresList);
+        }
+    }
+
+
+
 }

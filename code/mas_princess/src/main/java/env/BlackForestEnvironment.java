@@ -173,17 +173,32 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
     @Override
     public Collection<Literal> inRangePercepts(Agent agent) {
-        Collection<Literal> in_range = model.getAgentNeighbours(agent, agent.getAttackRange()).stream()
+        Collection<Literal> in_range = new ArrayList<>();
+
+        // Add percepts for agents in range
+        in_range.addAll(model.getAgentNeighbours(agent, agent.getAttackRange()).stream()
                 .map(it -> {
                     String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_range" : "enemy_in_range";
                     return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
                 })
                 .map(Literal::parseLiteral)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
-//        logger.info("in_range(" + agent.getName() + ") -> " + in_range);
+        // Add percepts for enemy gates in range
+        in_range.addAll(model.getEnemyGateNeighbours(agent, agent.getAttackRange()).stream()
+                .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getTeam(), gate.getCurrentHP()))
+                .map(Literal::parseLiteral)
+                .collect(Collectors.toList()));
+
+        // Add percepts for trees in range
+        in_range.addAll(model.getTreeNeighbours(agent, agent.getAttackRange()).stream()
+                .map(tree -> String.format("tree_in_range(%s, %d)", tree.isActive() ? "active" : "inactive", tree.getCurrentHP()))
+                .map(Literal::parseLiteral)
+                .collect(Collectors.toList()));
+
         return in_range;
     }
+
 
     @Override
     public Collection<Literal> inSightPercepts(Agent agent) {
