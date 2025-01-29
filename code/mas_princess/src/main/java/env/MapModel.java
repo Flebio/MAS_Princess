@@ -1,5 +1,6 @@
 package env;
 
+import env.objects.resources.Princess;
 import env.utils.*;
 import env.agents.*;
 import env.objects.structures.*;
@@ -32,9 +33,12 @@ public interface MapModel {
 
     boolean spawnAgent(Agent agent);
     boolean attackAgent(Agent attacking_agent, Agent target);
+
     boolean moveAgent(Agent agent, int stepSize, Direction direction);
     Optional<Agent> getAgentByPosition(Vector2D position);
     public Optional<Agent> getAgentByName(String agName);
+    public Optional<Gate> getGateByName(String gName);
+    public Optional<Tree> getTreeByName(String tName);
 
     public  boolean respawnAgent(Agent agent);
     // Map
@@ -62,4 +66,10 @@ public interface MapModel {
         ));
         // Maybe here we can do something for the range
     }
+    boolean attackGate(Agent attacking_agent, Gate target);
+    boolean attackTree(Agent attacking_agent, Tree target);
+
+    Set<Princess> getAllyPrincessNeighbours(Agent agent, int range);
+    Optional<Princess> getPrincessByName(String pName);
+
 }

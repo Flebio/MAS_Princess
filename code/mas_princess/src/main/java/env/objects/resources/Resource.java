@@ -1,33 +1,37 @@
 package env.objects.resources;
 
+import env.utils.*;
+
 // Resource class
 public abstract class Resource {
-    private final int quantity;
-    private final int x;
-    private final int y;
+    private final String name;
+    private boolean team;
+    private Pose pose;
 
-    public Resource(int quantity, int x, int y) {
-        this.quantity = quantity;
-        this.x = x;
-        this.y = y;
+    public Resource(String name, boolean team, Pose pose) {
+        this.name = name;
+        this.team = team;
+        this.pose = pose;
+    }
+    public String getName() {
+        return name;
+    }
+    public boolean getTeam() {
+        return team;
     }
 
-    public int getQuantity() {
-        return quantity;
+    public Pose getPose() {
+        return pose;
     }
 
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
+    public void setPose(Pose pose) {
+        this.pose = pose;
     }
 
     @Override
     public String toString() {
-        return String.format("Resource[Name: %s, Quantity: %d, Position: [%d,%d]]",
-                this.getClass().getSimpleName(), quantity, x, y);
+        return String.format("Resource[Name: %s, Pose: %s]",
+               name, pose);
     }
 }
 

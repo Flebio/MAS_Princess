@@ -3,7 +3,8 @@ package env;
 import env.utils.*;
 import env.agents.*;
 import env.objects.structures.*;
-import jason.asSyntax.Literal;
+import env.objects.resources.*;
+
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -106,6 +107,16 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
+    public boolean attackGate(Agent attacking_agent, Gate target) {
+        return this.gameMap.attackGate(attacking_agent, target);
+    }
+
+    @Override
+    public boolean attackTree(Agent attacking_agent, Tree target) {
+        return this.gameMap.attackTree(attacking_agent, target);
+    }
+
+    @Override
     public boolean moveAgent(Agent agent, int stepSize, Direction direction) {
         return this.gameMap.moveAgent(agent, stepSize, direction);
     }
@@ -136,5 +147,20 @@ public class BlackForestModel implements MapModel {
     public Set<Tree> getTreeNeighbours(Agent agent, int range) {
         return this.gameMap.getTreeNeighbours(agent, range);
     }
+
+    @Override
+    public Optional<Gate> getGateByName(String gName) { return this.gameMap.getGateByName(gName); }
+    @Override
+    public Optional<Tree> getTreeByName(String tName) {
+        return this.gameMap.getTreeByName(tName);
+    }
+
+    @Override
+    public Set<Princess> getAllyPrincessNeighbours(Agent agent, int range) {
+        return this.gameMap.getAllyPrincessNeighbours(agent, range);
+    }
+
+    @Override
+    public Optional<Princess> getPrincessByName(String pName) { return this.gameMap.getPrincessByName(pName); }
 
 }

@@ -13,9 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Identifies the enemy with the lowest HP and sets it as the target.
+ * Identifies the gate with the lowest HP and sets it as the target.
  */
-public class check_enemy_in_range extends DefaultInternalAction {
+public class check_gate_in_range extends DefaultInternalAction {
 
     @Override
     public Object execute(TransitionSystem ts, Unifier un, Term[] args) throws Exception {
@@ -26,30 +26,30 @@ public class check_enemy_in_range extends DefaultInternalAction {
         // Convert the belief base to a string
         String bbString = bb.toString();
 
-        // Regex pattern to extract enemy in range
-        Pattern pattern = Pattern.compile("enemy_in_range\\(([^,]+),([^)]+)\\)");
+        // Regex pattern to extract enemies in range
+        Pattern pattern = Pattern.compile("enemy_gate_in_range\\(([^,]+),([^)]+)\\)");
         Matcher matcher = pattern.matcher(bbString);
 
-        // Variables to track the entity with the lowest HP
-        String lowestHpEnemy = null;
+        // Variables to track the enemy with the lowest HP
+        String lowestHpGate = null;
         int lowestHp = Integer.MAX_VALUE;
 
         // Find the enemy with the lowest HP
         while (matcher.find()) {
-            String enemyName = matcher.group(1).trim(); // Extract enemy name
-            String enemyHpStr = matcher.group(2).trim(); // Extract HP as a string
+            String gateName = matcher.group(1).trim(); // Extract enemy name
+            String gateHpStr = matcher.group(2).trim(); // Extract HP as a string
 
             try {
-                int enemyHp = Integer.parseInt(enemyHpStr); // Safely parse HP
+                int enemyHp = Integer.parseInt(gateHpStr); // Safely parse HP
 
                 // Ignore enemies with HP <= 0
                 if (enemyHp > 0 && enemyHp < lowestHp) {
                     lowestHp = enemyHp;
-                    lowestHpEnemy = enemyName;
+                    lowestHpGate = gateName;
                 }
             } catch (NumberFormatException e) {
                 // Log invalid HP values and skip this enemy
-                System.err.println("Invalid HP value for enemy '" + enemyName + "': " + enemyHpStr);
+                System.err.println("Invalid HP value for enemy '" + gateName + "': " + gateHpStr);
             }
         }
 
@@ -59,9 +59,9 @@ public class check_enemy_in_range extends DefaultInternalAction {
             currentAgent.delBel(oldTarget);
         }
         // If an enemy is found, set it as the target
-        if (lowestHpEnemy != null) {
+        if (lowestHpGate != null) {
             // Add the new target belief
-            currentAgent.addBel(Literal.parseLiteral("target(" + lowestHpEnemy + ")"));
+            currentAgent.addBel(Literal.parseLiteral("target(" + lowestHpGate + ")"));
 
             // Log the target for debugging
             //System.out.println("New target set: " + lowestHpEnemy + " with HP: " + lowestHp);

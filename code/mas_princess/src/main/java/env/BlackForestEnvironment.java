@@ -102,7 +102,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                                 surroundingPercepts(agent).stream(),
                                 Stream.concat(
                                         inRangePercepts(agent).stream(),
-                                inSightPercepts(agent).stream()
+                                        inSightPercepts(agent).stream()
                                         )
                         )
         ).collect(Collectors.toList());
@@ -186,16 +186,16 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         // Add percepts for enemy gates in range
         in_range.addAll(model.getEnemyGateNeighbours(agent, agent.getAttackRange()).stream()
-                .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getTeam(), gate.getCurrentHP()))
+                .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList()));
 
         // Add percepts for trees in range
         in_range.addAll(model.getTreeNeighbours(agent, agent.getAttackRange()).stream()
-                .map(tree -> String.format("tree_in_range(%s, %d)", tree.isActive() ? "active" : "inactive", tree.getCurrentHP()))
+                .map(tree -> String.format("tree_in_range(%s, %d)", tree.getName(), tree.getHp()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList()));
-
+        //System.out.println(model.getEnemyGateNeighbours(agent, agent.getAttackRange()));
         return in_range;
     }
 
@@ -247,23 +247,43 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             Agent target = initializeAgentIfNeeded(action.getTerm(0).toString());
             result = model.attackAgent(agent, target);
             notifyModelChangedToView();
+        }else if (action.toString().contains("attack_gate")) {
+            Optional<Gate> target = this.model.getGateByName(action.getTerm(0).toString());
+            if (target.get() == null) {
+                return false;
+            }
+            result = model.attackGate(agent, target.get());
+            notifyModelChangedToView();
+        }else if (action.toString().contains("attack_tree")) {
+            Optional<Tree> target = this.model.getTreeByName(action.getTerm(0).toString());
+            if (target.get() == null) {
+                return false;
+            }
+            result = model.attackTree(agent, target.get());
+            notifyModelChangedToView();
         } else if (action.toString().contains("respawn")) {
             result = model.respawnAgent(agent);
 //            try { // Wait time to be able to get back in the game.
 //                Thread.sleep(5000L);
 //            } catch (InterruptedException ignored) {
 //            }
+        } else if (action.toString().contains("pick_up_princess")) {
+            // CONTINUARE result = model.pickup_princess(agent);
+            // AGGIUNGERE FUNZIONE IN GAMEMAP
         } else{
             logger.warning("Unknown action: " + action);
             return false;
         }
+
+        // DA AGGIUNGERE BUILD LADDER E REPAIR GATE
 
         try {
 //            Thread.sleep(1000L / model.getFPS());
             if (action.toString().contains("respawn")) {
                 Thread.sleep(5000L / model.getFPS());
             } else {
-                Thread.sleep(500L / model.getFPS());
+//                Thread.sleep(500L / model.getFPS());
+                Thread.sleep(100L / model.getFPS());
             }
         } catch (InterruptedException ignored) {
         }

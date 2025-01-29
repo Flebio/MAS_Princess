@@ -1,4 +1,4 @@
-/* Soldier Agent Initialization */
+/* Warrior Agent Initialization */
 hp(100).
 att_damage(10).
 
@@ -7,44 +7,41 @@ p2(0.0).
 
 !savePrincess.
 
-+!savePrincess: position(K, J) & objective_position(H, I) & objective(D) & att_damage(A) & state(S)
++!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
-        ?enemyInRange(S, update_hp(A));
+        ?check_hp(HP);
+        ?princessInRange(S);
+        ?enemyInRange(S, update_hp(AD));
+        ?gateInRange(S);
         !move_towards_objective.
 
 -!savePrincess
     <-
         !savePrincess.
 
-+?check_hp(A,D)
++?check_hp(HP)
     <-
-      ?(A - D <= 0);
-      .drop_all_desires;
-      //.drop_all_intentions;
-      .print("mortooooooooooo");
-      respawn(true);
-      -+hp(100);
-      !savePrincess.
+        ?(HP <= 0);
+        .drop_all_desires;
+        .print("Dead. Respawning...");
+        respawn(true);
+        -+hp(100);
+        !savePrincess.
 
--?check_hp(A,D)
+-?check_hp(HP)
     <-
-      .wait(1).
+        .wait(1).
 
-+update_hp(D)[source(Sender)]: hp(A)
++update_hp(AD)[source(Sender)]: hp(HP)
     <-
-      -update_hp(D)[source(Sender)];
-      -+hp(A - D);
-      ?check_hp(A, D).
-      //.print("Received damage ", D , " from ", Sender, ". Remaining hps: ", A - D).
-
-//-update_hp(D)[source(Sender)]: hp(A)
-    //<-
-      //wait(1).
+        -update_hp(AD)[source(Sender)];
+        //.print("Received damage ", AD , " from ", Sender, ". Remaining hps: ", HP - AD);
+        -+hp(HP - AD).
 
 +?enemyInRange(S, AttackMessage)
     <-
         //.print("Checking if enemy is in range...");
-        utils.check_enemy_in_range;
+        utils.check_in_range(enemy_in_range);
         ?(target(T)); // Test goal: Checks for enemies in range
         .send(T, tell, AttackMessage);
         attack_enemy(T);
@@ -52,27 +49,55 @@ p2(0.0).
 
 -?enemyInRange(S, AttackMessage)
     <-
-      .wait(1).
-      //.fail.
+        .wait(1).
+        //.fail.
         //.print("I got zero enemies.").
 
++?gateInRange(S)
+    <-
+        //.print("Checking if gate is in range...");
+        utils.check_in_range(gate_in_range);
+        ?(target(T)); // Test goal: Checks for enemies in range
+        attack_gate(T);
+        !savePrincess.
+
+-?gateInRange(S)
+    <-
+        .wait(1).
+        //.fail.
+        //.print("I got zero gates.").
+
+
++?princessInRange(S)
+    <-
+        //.print("Checking if princess is in range...");
+        utils.check_princess_in_range;
+        ?(target(T)); // Test goal: Checks for enemies in range
+        pick_up_princess(T);
+        !savePrincess.
+
+-?princessInRange(S)
+    <-
+        .wait(1).
+        //.fail.
+        //.print("I got zero princesses.").
 
 /* Move towards the gate based on position in the base */
 /* We prefer to go first in the direction that is farther from our position instead of (X >= 0.5).
 This way, if we have already reached a correct axis (either H or I), the agent only chooses to go in one direction. */
 +!move_towards_objective: position(K, J) & objective_position(H, I) & K <= H & J <= I & not(K == H & J == I)
     <-
-       //.wait(1000);
-       .random(X);
-       utils.compute_percentages(K, J, H, I, right, down);
-       /* .print("Primo caso"); */
-       /* .print("Random value: ",X);  */
+        //.wait(1000);
+        .random(X);
+        utils.compute_percentages(K, J, H, I, right, down);
+        /* .print("Primo caso"); */
+        /* .print("Random value: ",X);  */
 
-       if (p1(Y) & X <= Y) {
+        if (p1(Y) & X <= Y) {
            /* .print("Going right."); */
            // -+position(K+1,J);
            absolute_move(right);
-       } else {
+        } else {
            if (p2(G) & G == 0.0) {
                /* .print("Stuck, moving random."); */
                .random(Y);
@@ -88,23 +113,23 @@ This way, if we have already reached a correct axis (either H or I), the agent o
                // -+position(K,J+1);
                absolute_move(down);
            }
-       };
+        };
 
-       !savePrincess.
+        !savePrincess.
 
 +!move_towards_objective: position(K, J) & objective_position(H, I) & K >= H & J <= I & not(K == H & J == I)
     <-
-       //.wait(1000);
-       .random(X);
-       utils.compute_percentages(K, J, H, I, left, down);
-       /* .print("Secondo caso");  */
-       /* .print("Random value: ",X);  */
+        //.wait(1000);
+        .random(X);
+        utils.compute_percentages(K, J, H, I, left, down);
+        /* .print("Secondo caso");  */
+        /* .print("Random value: ",X);  */
 
-       if (p1(Y) & X <= Y) {
+        if (p1(Y) & X <= Y) {
            /* .print("Going left."); */
            // -+position(K-1,J);
            absolute_move(left);
-       } else {
+        } else {
            if (p2(G) & G == 0.0) {
                /* .print("Stuck, moving random."); */
                .random(Y);
@@ -120,24 +145,24 @@ This way, if we have already reached a correct axis (either H or I), the agent o
                // -+position(K,J+1);
                absolute_move(down);
            }
-       };
+        };
 
-       !savePrincess.
+        !savePrincess.
 
 
 +!move_towards_objective: position(K, J) & objective_position(H, I) & K <= H & J >= I & not(K == H & J == I)
     <-
-       //.wait(1000);
-       .random(X);
-       utils.compute_percentages(K, J, H, I, right, up);
-       /* .print("Terzo caso");  */
-       /* .print("Random value: ",X);  */
+        //.wait(1000);
+        .random(X);
+        utils.compute_percentages(K, J, H, I, right, up);
+        /* .print("Terzo caso");  */
+        /* .print("Random value: ",X);  */
 
-       if (p1(Y) & X <= Y) {
+        if (p1(Y) & X <= Y) {
            /* .print("Going right."); */
            // -+position(K+1,J);
            absolute_move(right);
-       } else {
+        } else {
            if (p2(G) & G == 0.0) {
                /* .print("Stuck, moving random."); */
                .random(Y);
@@ -153,24 +178,24 @@ This way, if we have already reached a correct axis (either H or I), the agent o
                // -+position(K,J-1);
                absolute_move(up);
            }
-       };
+        };
 
-       !savePrincess.
+        !savePrincess.
 
 
 +!move_towards_objective: position(K, J) & objective_position(H, I) & K >= H & J >= I & not(K == H & J == I)
     <-
-       //.wait(1000);
-       .random(X);
-       utils.compute_percentages(K, J, H, I, left, up);
-       /* .print("Quarto caso");  */
-       /* .print("Random value: ",X);  */
+        //.wait(1000);
+        .random(X);
+        utils.compute_percentages(K, J, H, I, left, up);
+        /* .print("Quarto caso");  */
+        /* .print("Random value: ",X);  */
 
-       if (p1(Y) & X <= Y) {
+        if (p1(Y) & X <= Y) {
            /* .print("Going left."); */
            // -+position(K-1,J);
            absolute_move(left);
-       } else {
+        } else {
            if (p2(G) & G == 0.0) {
                /* .print("Stuck, moving random."); */
                .random(Y);
@@ -186,9 +211,9 @@ This way, if we have already reached a correct axis (either H or I), the agent o
                // -+position(K,J-1);
                absolute_move(up);
            }
-       };
+        };
 
-       !savePrincess.
+        !savePrincess.
 
 -!move_towards_objective
     <-

@@ -2,18 +2,16 @@ MAS princess {
 
 	infrastructure: Centralised // no distribution, the whole MAS runs in the same host
 
-	environment: env.BlackForestEnvironment(30, 20)
+	environment: env.BlackForestEnvironment(40, 20)
 
 	agents: // which agents partecipates the MAS?
 		archer_b1 archer_agent;
-		archer_b2 archer_agent;
-		//priest_b2 archer_agent;
+		warrior_b2 warrior_agent;
 		warrior_b3 warrior_agent;
-	    //gatherer_b4 warrior_agent;
+
 		//archer_r1 archer_agent;
-		archer_r2 archer_agent;
-	    warrior_r3 warrior_agent;
-	    warrior_r4 warrior_agent;
+        //warrior_r2 warrior_agent;
+		//warrior_r3 warrior_agent;
 
 	aslSourcePath: // where to find agents' source code
 		"src/main/asl";

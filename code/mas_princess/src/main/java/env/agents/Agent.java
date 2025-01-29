@@ -9,10 +9,11 @@ public abstract class Agent extends jason.asSemantics.Agent {
     private int max_hp;
     private int attackRange;          // Attack range
     private int attackPower;          // Attack power
+    private double landProbability;          // Attack power
     private Pose pose;                // Agent's position and orientation
 
     // Constructor
-    public Agent(String name, boolean team, int max_hp, int attackRange, int attackPower) {
+    public Agent(String name, boolean team, int max_hp, int attackRange, int attackPower, double landProbability) {
         this.name = name;
         this.team = team;
         this.state = "spawn";
@@ -20,6 +21,7 @@ public abstract class Agent extends jason.asSemantics.Agent {
         this.max_hp = max_hp;
         this.attackRange = attackRange;
         this.attackPower = attackPower;
+        this.landProbability = landProbability;
         this.pose = null;  // Set the initial position and orientation
     }
 
@@ -74,6 +76,13 @@ public abstract class Agent extends jason.asSemantics.Agent {
 
     public void setAttackPower(int attackPower) {
         this.attackPower = attackPower;
+    }
+
+    public double getLandProbability() {
+        return landProbability;
+    }
+    public void setLandProbability(double landProbability) {
+        this.landProbability = landProbability;
     }
 
     public Pose getPose() {

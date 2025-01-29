@@ -99,6 +99,11 @@ public class Cell {
                 if (structure instanceof Gate && ((Gate) structure).getTeam() == movingAgent.getTeam()) {
                     return false;
                 }
+
+                // Is a Gate and destroyed -> Not occupied
+                if (structure instanceof Gate && ((Gate) structure).isDestroyed()) {
+                    return false;
+                }
             }
         }
 
