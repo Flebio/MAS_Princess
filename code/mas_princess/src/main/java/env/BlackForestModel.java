@@ -2,6 +2,7 @@ package env;
 
 import env.utils.*;
 import env.agents.*;
+import env.objects.structures.*;
 import jason.asSyntax.Literal;
 
 import java.util.*;
@@ -124,6 +125,16 @@ public class BlackForestModel implements MapModel {
     @Override
     public  boolean respawnAgent(Agent agent){
         return this.gameMap.respawnAgent(agent);
+    }
+
+    @Override
+    public Set<Gate> getEnemyGateNeighbours(Agent agent, int range) {
+        return this.gameMap.getEnemyGateNeighbours(agent, range);
+    }
+
+    @Override
+    public Set<Tree> getTreeNeighbours(Agent agent, int range) {
+        return this.gameMap.getTreeNeighbours(agent, range);
     }
 
 }

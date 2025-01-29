@@ -17,7 +17,7 @@ public class GameMap {
     private final int height;
     private final Cell[][] map;
     private final Map<String, Agent> agentsList = Collections.synchronizedMap(new HashMap<>());
-    private final Set<MapStructure> structuresList = Collections.synchronizedSet(new HashSet<>());
+    private final Map<String, MapStructure> structuresList = Collections.synchronizedMap(new HashMap<>());
     private final ReadWriteLock mapLock = new ReentrantReadWriteLock();
     private static final Random RAND = new Random();
 
@@ -115,17 +115,18 @@ public class GameMap {
                     map[x][y] = new Cell(Zone.BATTLEFIELD, x, y);
                 }
             }
+
             // Place Emptys where the battlefield crosses the river
             if (!flagPlaced && x == middleX) {
                 if (map[x][crossableY1] != null) {
-                    map[x][crossableY1].setStructure(new Empty());
+                    map[x][crossableY1].setStructure(new Empty( new Pose(new Vector2D(x, crossableY1), Orientation.SOUTH)));
                 }
                 if (map[x][crossableY2] != null) {
-                    map[x][crossableY2].setStructure(new Empty());
+                    map[x][crossableY2].setStructure(new Empty( new Pose(new Vector2D(x, crossableY2), Orientation.SOUTH)));
                 }
 
                 if (map[x][crossableY3] != null) {
-                    map[x][crossableY3].setStructure(new Empty());
+                    map[x][crossableY3].setStructure(new Empty( new Pose(new Vector2D(x, crossableY3), Orientation.SOUTH)));
                 }
                 flagPlaced = true;
             }
@@ -135,15 +136,18 @@ public class GameMap {
         int baseWidth = this.getWidth() / 12;
         int baseHeight = this.getHeight() / 4;
 
+        int blueWallsIdx = 1;
+        int redWallsIdx = 1;
+
         for (int x = 0; x < baseWidth + 1; x++) {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, false);
-                        map[x][y].setStructure(gate);
-                        map[x][y + 1].setStructure(gate);
+                        map[x][y].setStructure(new Gate("gate_b1", 100, false, new Pose(new Vector2D(x, y), Orientation.SOUTH)));
+                        map[x][y + 1].setStructure(new Gate("gate_b2", 100, false, new Pose(new Vector2D(x, y + 1), Orientation.SOUTH)));
                     } else if (y != this.getHeight() / 2) {
-                        map[x][y].setStructure(new Wall(false));
+                        map[x][y].setStructure(new Wall("wall_b" + blueWallsIdx, false, new Pose(new Vector2D(x, y), Orientation.SOUTH)));
+                        blueWallsIdx++;
                     }
                 }
             }
@@ -153,57 +157,61 @@ public class GameMap {
             for (int y = baseHeight - 1; y < this.getHeight() - baseHeight + 1; y++) {
                 if (map[x][y].getZoneType() == Zone.BATTLEFIELD) {
                     if (y == this.getHeight() / 2 - 1) {
-                        Gate gate = new Gate(100, true);
-                        map[x][y].setStructure(gate);
-                        map[x][y + 1].setStructure(gate);
+                        map[x][y].setStructure(new Gate("gate_r1", 100, false, new Pose(new Vector2D(x, y), Orientation.SOUTH)));
+                        map[x][y + 1].setStructure(new Gate("gate_r2", 100, false, new Pose(new Vector2D(x, y + 1), Orientation.SOUTH)));
                     } else if (y != this.getHeight() / 2) {
-                        map[x][y].setStructure(new Wall(true));
+                        map[x][y].setStructure(new Wall("wall_r" + redWallsIdx, true, new Pose(new Vector2D(x, y), Orientation.SOUTH)));
+                        redWallsIdx++;
                     }
                 }
             }
         }
     }
+
     private void addBridge() {
         int bridgeY = (2 * this.getHeight()) / 3 + 1;
         int bridgeXStart = this.getWidth() / 2 - 1;
         int bridgeXEnd = this.getWidth() / 2 + 1;
 
-        Bridge bridge = new Bridge(0.1, 10);
 
         for (int x = bridgeXStart; x <= bridgeXEnd; x++) {
             for (int y = bridgeY; y < bridgeY + 2; y++) {
+                Bridge bridge = new Bridge(0.1, new Pose(new Vector2D(x, y), Orientation.SOUTH));
                 map[x][y].setStructure(bridge);
                 map[x][y].setZoneType(Zone.BATTLEFIELD);
             }
         }
     }
+
     // Helper method to validate if a cell can have a tree
     private boolean isValidTreeCell(int x, int y) {
-        return map[x][y] != null
-                && map[x][y].getStructure() == null
-                && map[x][y].getZoneType() == Zone.BATTLEFIELD;
+        Cell cell = this.getCellByPosition(x, y);
+        return cell != null
+                && cell.getStructure() == null
+                && cell.getZoneType() == Zone.BATTLEFIELD;
     }
+
     private void addTrees() {
-        // Number of trees to spawn (e.g., ~5% of the map area)
-        int treeCount = (this.width * this.height) / 15;
+        // Number of trees to spawn
+        int treeCount = (this.width * this.height) / 33;
 
         // Define spawn area dimensions
-        int northSpawnAreaWidth = this.getWidth() / 2 -1; // Width for each northern area
-        int southSpawnAreaWidth = this.getWidth() / 2 -1; // Width for each southern area
-        int spawnAreaHeight = this.getHeight() / 4 - 1; // Height for each area (same for all)
+        int northSpawnAreaWidth = this.getWidth() / 2 - 1;
+        int southSpawnAreaWidth = this.getWidth() / 2 - 1;
+        int spawnAreaHeight = this.getHeight() / 4 - 1;
 
         // Define bounds for the four areas (northern and southern)
-        int northStartY = 0; // Northern areas start at the top row
-        int southStartY = this.getHeight() - spawnAreaHeight; // Southern areas start at the bottom row
-        int area1StartX = 0; // Left northern area
-        int area2StartX = this.getWidth() - northSpawnAreaWidth; // Right northern area
-        int area3StartX = 0; // Left southern area
-        int area4StartX = this.getWidth() - southSpawnAreaWidth; // Right southern area
+        int northStartY = 0;
+        int southStartY = this.getHeight() - spawnAreaHeight;
+        int area1StartX = 0;
+        int area2StartX = this.getWidth() - northSpawnAreaWidth;
+        int area3StartX = 0;
+        int area4StartX = this.getWidth() - southSpawnAreaWidth;
 
         // Define a list of all spawnable cells
         List<Cell> spawnableCells = new ArrayList<>();
 
-        // Add northern areas to spawnable cells (top border included)
+        // Add northern areas to spawnable cells
         for (int x = area1StartX; x < area1StartX + northSpawnAreaWidth; x++) {
             for (int y = northStartY; y < northStartY + spawnAreaHeight; y++) {
                 if (isValidTreeCell(x, y)) {
@@ -219,7 +227,7 @@ public class GameMap {
             }
         }
 
-        // Add southern areas to spawnable cells (bottom border included)
+        // Add southern areas to spawnable cells
         for (int x = area3StartX; x < area3StartX + southSpawnAreaWidth; x++) {
             for (int y = southStartY; y < southStartY + spawnAreaHeight; y++) {
                 if (isValidTreeCell(x, y)) {
@@ -236,12 +244,13 @@ public class GameMap {
         }
 
         // Randomly place trees in the spawnable cells
-        for (int i = 0; i < treeCount && !spawnableCells.isEmpty(); i++) {
+        for (int i = 1; i <= treeCount && !spawnableCells.isEmpty(); i++) {
             int index = RAND.nextInt(spawnableCells.size());
             Cell selectedCell = spawnableCells.remove(index);
-            selectedCell.setStructure(new Tree(50, 20)); // Create a tree with example health and resource values
+            selectedCell.setStructure(new Tree("tree_" + i, 50, 20, new Pose(new Vector2D(selectedCell.getX(), selectedCell.getY()), Orientation.SOUTH)));
         }
     }
+
     public void spawnPrincess(boolean team) {
         Zone opponentBaseZone = team ? Zone.BBASE : Zone.RBASE;
 
@@ -616,17 +625,14 @@ public class GameMap {
     }
 
 
-    // Methods that were previously in the environment
+    public boolean containsStructure(MapStructure structure) {
+        synchronized (this.structuresList) {
+            return this.structuresList.containsKey(structure.getName());
+        }
+    }
     public boolean containsAgent(Agent agent) {
         synchronized (this.agentsList) {
             return this.agentsList.containsKey(agent.getName());
-        }
-    }
-    public Set<Agent> getAllAgents() {
-        synchronized (this.agentsList) {
-            return this.agentsList.values()
-                    .stream()
-                    .collect(Collectors.toSet());
         }
     }
     public void ensureAgentExists(Agent agent) {
@@ -676,6 +682,21 @@ public class GameMap {
         return neighbourhoodFunction.apply(agentPosition, neighbourPosition);
     }
 
+    private boolean isStructureInRange(Agent agent, MapStructure structure, int range) {
+        if (!containsAgent(agent) || !containsStructure(structure)) {
+            return false;
+        }
+        BiFunction<Vector2D, Vector2D, Boolean> neighbourhoodFunction = (a, b) -> {
+            Vector2D distanceVector = b.minus(a);
+            return Math.abs(distanceVector.getX()) <= range
+                    && Math.abs(distanceVector.getY()) <= range;
+        };
+
+        Vector2D agentPosition = this.getAgentPosition(agent);
+        Vector2D neighbourPosition = structure.getPose().getPosition();
+        return neighbourhoodFunction.apply(agentPosition, neighbourPosition);
+    }
+
     public Set<Agent> getAgentNeighbours(Agent agent, int range) {
         return this.getAllAgents().stream()
                 .filter(it -> !it.equals(agent))
@@ -683,47 +704,36 @@ public class GameMap {
                 .collect(Collectors.toSet());
     }
 
-    // Retrieve gates within range that belong to the enemy team
     public Set<Gate> getEnemyGateNeighbours(Agent agent, int range) {
-        return this.getAllGates().stream()
+        return this.getAllStructures(Gate.class).stream() // Use Gate.class instead of Gate
                 .filter(gate -> !gate.getTeam().equals(agent.getTeam())) // Only enemy gates
                 .filter(gate -> this.isStructureInRange(agent, gate, range)) // Within range
+                .map(gate -> (Gate) gate) // Cast to Gate
                 .collect(Collectors.toSet());
     }
-
 
     public Set<Tree> getTreeNeighbours(Agent agent, int range) {
-        return this.getAllTrees().stream()
+        return this.getAllStructures(Tree.class).stream() // Use Tree.class instead of Tree
                 .filter(tree -> this.isStructureInRange(agent, tree, range))
+                .map(tree -> (Tree) tree) // Cast to Tree
                 .collect(Collectors.toSet());
     }
 
-    private boolean isStructureInRange(Agent agent, MapStructure structure, int range) {
-        int dx = Math.abs(agent.getPose().getPosition().getX() - structure.getX());
-        int dy = Math.abs(agent.getPose().getPosition().getY() - structure.getY());
-        return dx + dy <= range; // Manhattan distance
-    }
-
-    public Set<Gate> getAllGates() {
-        return this.getAllStructures().stream()
-                .filter(structure -> structure instanceof Gate)
-                .map(structure -> (Gate) structure)
-                .collect(Collectors.toSet());
-    }
-
-    public Set<Tree> getAllTrees() {
-        return this.getAllStructures().stream()
-                .filter(structure -> structure instanceof Tree)
-                .map(structure -> (Tree) structure)
-                .collect(Collectors.toSet());
-    }
-
-    public Set<MapStructure> getAllStructures() {
+    public Set<MapStructure> getAllStructures(Class<? extends MapStructure> structureClass) {
         synchronized (this.structuresList) {
-            return new HashSet<>(this.structuresList);
+            return this.structuresList.values()
+                    .stream()
+                    .filter(structure -> structureClass.isInstance(structure))
+                    .collect(Collectors.toSet());
         }
     }
 
-
+    public Set<Agent> getAllAgents() {
+        synchronized (this.agentsList) {
+            return this.agentsList.values()
+                    .stream()
+                    .collect(Collectors.toSet());
+        }
+    }
 
 }

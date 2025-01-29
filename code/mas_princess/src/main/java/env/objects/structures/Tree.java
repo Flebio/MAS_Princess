@@ -1,12 +1,14 @@
 package env.objects.structures;
 
+import env.utils.*;
+
 // Tree structure
 public class Tree extends MapStructure {
     private final int respawnDuration;
     private int remainingRespawnTime;
 
-    public Tree(int maxLife, int respawnDuration) {
-        super(true, false, false,1, 1, maxLife, null); // Trees are breakable, not repairable, 1x1 cells
+    public Tree(String name, int maxLife, int respawnDuration, Pose pose) {
+        super(name, true, false, false,1, 1, maxLife, null, pose); // Trees are breakable, not repairable, 1x1 cells
         this.respawnDuration = respawnDuration;
         this.remainingRespawnTime = 0;
     }

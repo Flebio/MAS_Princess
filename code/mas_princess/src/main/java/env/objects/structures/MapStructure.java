@@ -1,7 +1,10 @@
 package env.objects.structures;
 
+import env.utils.*;
+
 // Base Structure class
 public abstract class MapStructure {
+    private final String name;
     private final boolean breakable;
     private final boolean repairable;
     private final Boolean walkable;
@@ -12,7 +15,9 @@ public abstract class MapStructure {
     private int hp;
     private Pose pose;
 
-    public MapStructure(boolean breakable, boolean repairable, Boolean walkable, int width, int height, int max_hp, Boolean team) {
+
+    public MapStructure(String name, boolean breakable, boolean repairable, Boolean walkable, int width, int height, int max_hp, Boolean team, Pose pose) {
+        this.name = name;
         this.breakable = breakable;
         this.repairable = repairable;
         this.walkable = walkable;
@@ -21,8 +26,10 @@ public abstract class MapStructure {
         this.max_hp = max_hp;
         this.hp = max_hp;
         this.team = team;
-        this.pose = pose;
+        this.pose = pose;  // Set the initial position and orientation
     }
+
+    public String getName() { return name; }
 
     public boolean isBreakable() {
         return breakable;
@@ -33,14 +40,6 @@ public abstract class MapStructure {
     }
     public boolean isWalkable() {
         return walkable;
-    }
-
-    public Pose getPose() {
-        return pose;
-    }
-
-    public void setPose(Pose pose) {
-        this.pose = pose;
     }
 
     public int getWidth() {
@@ -75,6 +74,14 @@ public abstract class MapStructure {
         if (repairable && hp < max_hp) {
             hp = Math.min(hp + amount, max_hp);
         }
+    }
+
+    public Pose getPose() {
+        return pose;
+    }
+
+    public void setPose(Pose pose) {
+        this.pose = pose;
     }
 
     @Override
