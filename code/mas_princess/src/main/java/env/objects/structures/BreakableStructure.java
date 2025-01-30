@@ -15,7 +15,7 @@ public class BreakableStructure extends MapStructure {
     }
 
     public void takeDamage(int damage) {
-        if (this.isBreakable() && this.getHp() > 0) {
+        if (this.isBreakable() && this.getHp() >= 0) {
             this.setHp(Math.max(this.getHp() - damage, 0));
         }
     }

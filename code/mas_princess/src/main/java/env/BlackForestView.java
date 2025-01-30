@@ -34,6 +34,8 @@ public class BlackForestView extends JFrame implements MapView {
         refreshBackground(); // Refresh map with the new frame
     });
 
+    private final ImageIcon crownIcon = new ImageIcon(getClass().getResource("/sprites/crown.png"));
+
 
 
     // Constructor
@@ -115,8 +117,14 @@ public class BlackForestView extends JFrame implements MapView {
 
         for (Agent agent : model.getAllAgents()) {
             // Create a label for each agent
-            JLabel agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
-                    agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
+            JLabel agentLabel = new JLabel();
+            if (agent.getCarriedItem() == null) {
+                agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
+                        agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
+            } else {
+                agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
+                        agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
+            }
 
             // Set agent icon
             ImageIcon agentIcon = getAgentIcon(agent);
@@ -387,7 +395,7 @@ public class BlackForestView extends JFrame implements MapView {
 
                     Resource resource = cell.getResource();
                     if (resource != null) {
-                        if (resource instanceof Princess princess) {
+                        if (resource instanceof Princess princess && !princess.isCarried()) {
                             String teamColor = princess.getTeam() ? "red" : "blue";
                             ImageIcon princessIcon = princessSprites.get(teamColor);
                             if (princessIcon != null) {
@@ -437,17 +445,22 @@ public class BlackForestView extends JFrame implements MapView {
     }
 
     // Get the appropriate agent icon
-        private ImageIcon getAgentIcon(Agent agent) {
-            Pose pose = agent.getPose();
-            if (pose == null) return null;
+    private ImageIcon getAgentIcon(Agent agent) {
+        Pose pose = agent.getPose();
+        if (pose == null) return null;
 
-            AgentKey key = new AgentKey(agent.getClass(), agent.getTeam(), pose.getOrientation());
-            java.util.List<ImageIcon> sprites = agentSprites.get(key);
-            if (sprites == null || sprites.isEmpty()) return null;
+        AgentKey key = new AgentKey(agent.getClass(), agent.getTeam(), pose.getOrientation());
+        java.util.List<ImageIcon> sprites = agentSprites.get(key);
+        if (sprites == null || sprites.isEmpty()) return null;
 
-            int frame = agentAnimationFrames.getOrDefault(agent, 0);
-            return sprites.get(frame % sprites.size());
+        int frame = agentAnimationFrames.getOrDefault(agent, 0);
+        ImageIcon baseIcon = sprites.get(frame % sprites.size());
+
+        if (agent.getCarriedItem() != null) {
+            return new ImageIcon(createImageWithTransparency(baseIcon, crownIcon.getImage()));
         }
+        return baseIcon;
+    }
 
 
         // Create a new image by combining existing image and overlay icon
@@ -477,6 +490,30 @@ public class BlackForestView extends JFrame implements MapView {
         }
         refreshBackground();
     }
+
+    public void showTemporaryEffect(Vector2D position, String spritePath, int duration) {
+        JLabel cellLabel = cellsGrid.get(position);
+
+        if (cellLabel != null) {
+            ImageIcon effectSprite = new ImageIcon(getClass().getResource(spritePath));
+            ImageIcon previousIcon = (ImageIcon) cellLabel.getIcon(); // Save the current icon
+
+            cellLabel.setIcon(effectSprite); // Set the temporary effect
+            cellLabel.revalidate();
+            cellLabel.repaint();
+
+            // Timer to remove the effect after 'duration' milliseconds
+            javax.swing.Timer timer = new javax.swing.Timer(duration, e -> {
+                cellLabel.setIcon(previousIcon); // Restore the previous state
+                cellLabel.revalidate();
+                cellLabel.repaint();
+            });
+
+            timer.setRepeats(false); // Ensure it runs only once
+            timer.start();
+        }
+    }
+
 
     @Override
     public void notifyModelChanged() {

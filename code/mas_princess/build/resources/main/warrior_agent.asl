@@ -10,6 +10,7 @@ p2(0.0).
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
         ?check_hp(HP);
+        ?princessInRange(S);
         ?enemyInRange(S, update_hp(AD));
         ?gateInRange(S);
         !move_towards_objective.
@@ -40,7 +41,7 @@ p2(0.0).
 +?enemyInRange(S, AttackMessage)
     <-
         //.print("Checking if enemy is in range...");
-        utils.check_enemy_in_range;
+        utils.check_in_range(enemy_in_range);
         ?(target(T)); // Test goal: Checks for enemies in range
         .send(T, tell, AttackMessage);
         attack_enemy(T);
@@ -54,8 +55,8 @@ p2(0.0).
 
 +?gateInRange(S)
     <-
-        //.print("Checking if enemy is in range...");
-        utils.check_gate_in_range;
+        //.print("Checking if gate is in range...");
+        utils.check_in_range(enemy_gate_in_range);
         ?(target(T)); // Test goal: Checks for enemies in range
         attack_gate(T);
         !savePrincess.
@@ -64,7 +65,22 @@ p2(0.0).
     <-
         .wait(1).
         //.fail.
-        //.print("I got zero enemies.").
+        //.print("I got zero gates.").
+
+
++?princessInRange(S)
+    <-
+        //.print("Checking if princess is in range...");
+        utils.check_in_range(princess_in_range);
+        ?(target(T)); // Test goal: Checks for enemies in range
+        pick_up_princess(T);
+        !savePrincess.
+
+-?princessInRange(S)
+    <-
+        .wait(1).
+        //.fail.
+        //.print("I got zero princesses.").
 
 /* Move towards the gate based on position in the base */
 /* We prefer to go first in the direction that is farther from our position instead of (X >= 0.5).

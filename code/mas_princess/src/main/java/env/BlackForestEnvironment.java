@@ -195,6 +195,12 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 .map(tree -> String.format("tree_in_range(%s, %d)", tree.getName(), tree.getHp()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList()));
+
+        // Add percepts for princess in range
+        in_range.addAll(model.getAllyPrincessNeighbours(agent, 1).stream()
+                .map(princess -> String.format("princess_in_range(%s)", princess.getName()))
+                .map(Literal::parseLiteral)
+                .collect(Collectors.toList()));
         //System.out.println(model.getEnemyGateNeighbours(agent, agent.getAttackRange()));
         return in_range;
     }
@@ -261,15 +267,17 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.attackTree(agent, target.get());
             notifyModelChangedToView();
-        } else if (action.toString().contains("respawn")) {
+        }  else if (action.toString().contains("pick_up_princess")) {
+            Optional<Princess> target = this.model.getPrincessByName(action.getTerm(0).toString());
+            if (target.get() == null) {
+                return false;
+            }
+            result = model.pickUpPrincess(agent, target.get());
+            notifyModelChangedToView();
+
+        }else if (action.toString().contains("respawn")) {
             result = model.respawnAgent(agent);
-//            try { // Wait time to be able to get back in the game.
-//                Thread.sleep(5000L);
-//            } catch (InterruptedException ignored) {
-//            }
-        } else if (action.toString().contains("pick_up_princess")) {
-            // CONTINUARE result = model.pickup_princess(agent);
-            // AGGIUNGERE FUNZIONE IN GAMEMAP
+            notifyModelChangedToView();
         } else{
             logger.warning("Unknown action: " + action);
             return false;
@@ -283,7 +291,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 Thread.sleep(5000L / model.getFPS());
             } else {
 //                Thread.sleep(500L / model.getFPS());
-                Thread.sleep(100L / model.getFPS());
+                Thread.sleep(400L / model.getFPS());
             }
         } catch (InterruptedException ignored) {
         }

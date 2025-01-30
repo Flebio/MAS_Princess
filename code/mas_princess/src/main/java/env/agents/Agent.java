@@ -1,5 +1,6 @@
 package env.agents;
 
+import env.objects.resources.Resource;
 import env.utils.Pose;
 public abstract class Agent extends jason.asSemantics.Agent {
     private String name;
@@ -11,6 +12,7 @@ public abstract class Agent extends jason.asSemantics.Agent {
     private int attackPower;          // Attack power
     private double landProbability;          // Attack power
     private Pose pose;                // Agent's position and orientation
+    private Resource carriedResource;
 
     // Constructor
     public Agent(String name, boolean team, int max_hp, int attackRange, int attackPower, double landProbability) {
@@ -23,6 +25,7 @@ public abstract class Agent extends jason.asSemantics.Agent {
         this.attackPower = attackPower;
         this.landProbability = landProbability;
         this.pose = null;  // Set the initial position and orientation
+        this.carriedResource = null;
     }
 
     // Getters and Setters
@@ -85,6 +88,18 @@ public abstract class Agent extends jason.asSemantics.Agent {
         this.landProbability = landProbability;
     }
 
+    public Resource getCarriedItem() { return this.carriedResource; }
+    public void startCarrying(Resource carriedResource) {
+        if (this.getCarriedItem() == null) {
+            carriedResource.pickedUp();
+            this.carriedResource = carriedResource; }
+        }
+    public void stopCarrying(Resource carriedResource) {
+        if (this.getCarriedItem() != null) {
+            carriedResource.dropped();
+            this.carriedResource = null;
+        }
+    }
     public Pose getPose() {
         return pose;
     }

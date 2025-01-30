@@ -163,4 +163,7 @@ public class BlackForestModel implements MapModel {
     @Override
     public Optional<Princess> getPrincessByName(String pName) { return this.gameMap.getPrincessByName(pName); }
 
+    @Override
+    public boolean pickUpPrincess(Agent agent, Princess target) {return this.gameMap.pickUpPrincess(agent, target);}
+
 }

@@ -31,12 +31,15 @@ public class Cell {
     public int getY() {
         return y;
     }
+
     public Vector2D getPosition() {
         return new Vector2D(x, y);
     }
+
     public Zone getZoneType() {
         return zoneType;
     }
+
     public void setZoneType(Zone zoneType) {
         this.zoneType = zoneType;
     }
@@ -44,10 +47,11 @@ public class Cell {
     public MapStructure getStructure() {
         return structure;
     }
+
     public void setStructure(MapStructure structure) {
         if (structure == null) {
             this.structure = null;
-        }else if (this.isOccupied(null)) {
+        }else if (this.isOccupied(null, null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.structure = structure;
@@ -57,10 +61,11 @@ public class Cell {
     public Resource getResource() {
         return resource;
     }
+
     public void setResource(Resource resource) {
         if (resource == null) {
             this.resource = null;
-        }else if (this.isOccupied(null)) {
+        }else if (this.isOccupied(null, resource)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.resource = resource;
@@ -75,21 +80,21 @@ public class Cell {
     public void setAgent(Agent agent) {
         if (agent == null) {
             this.agent = null;
-        }else if (this.isOccupied(agent)) {
+        }else if (this.isOccupied(agent, null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.agent = agent;
         }
     }
 
-    public boolean isOccupied(Agent movingAgent) {
+    public boolean isOccupied(Agent movingAgent, Resource movingResource) {
         // Check if the cell is completely empty
         if (this.agent == null && this.structure == null && this.resource == null) {
             return false;
         }
 
         // If there is a structure, validate its conditions
-        if (structure != null) {
+        if (structure != null && movingAgent != null) {
             if (structure.isWalkable()) {
                 // Not a Gate -> Not occupied
                 if (!(structure instanceof Gate)) {
@@ -99,11 +104,16 @@ public class Cell {
                 if (structure instanceof Gate && ((Gate) structure).getTeam() == movingAgent.getTeam()) {
                     return false;
                 }
-
                 // Is a Gate and destroyed -> Not occupied
                 if (structure instanceof Gate && ((Gate) structure).isDestroyed()) {
                     return false;
                 }
+            }
+        } else if (agent != null && movingResource != null) {
+            // If there's an agent in the cell and the moving resource has the same team -> not occupato
+            if (agent.getCarriedItem().equals(movingResource)) {
+                return false;
+
             }
         }
 
@@ -144,8 +154,8 @@ public class Cell {
     }
 
     private char getResourceSymbol() {
-        if (resource instanceof Cake) return 'C';
-        if (resource instanceof Wood) return 'L';
+        //if (resource instanceof Cake) return 'C';
+        //if (resource instanceof Wood) return 'L';
         if (resource instanceof Princess) return 'P';
         return ' ';
     }

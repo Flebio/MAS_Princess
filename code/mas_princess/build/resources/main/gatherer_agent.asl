@@ -1,6 +1,6 @@
 /* Warrior Agent Initialization */
-hp(80).
-att_damage(10).
+hp(60).
+att_damage(5).
 
 p1(0.0).
 p2(0.0).
@@ -25,7 +25,7 @@ p2(0.0).
         .drop_all_desires;
         .print("Dead. Respawning...");
         respawn(true);
-        -+hp(80);
+        -+hp(100);
         !savePrincess.
 
 -?check_hp(HP)
@@ -56,7 +56,7 @@ p2(0.0).
 +?gateInRange(S)
     <-
         //.print("Checking if gate is in range...");
-        utils.check_in_range(enemy_gate_in_range);
+        utils.check_in_range(gate_in_range);
         ?(target(T)); // Test goal: Checks for enemies in range
         attack_gate(T);
         !savePrincess.
@@ -71,7 +71,7 @@ p2(0.0).
 +?princessInRange(S)
     <-
         //.print("Checking if princess is in range...");
-        utils.check_in_range(princess_in_range);
+        utils.check_princess_in_range;
         ?(target(T)); // Test goal: Checks for enemies in range
         pick_up_princess(T);
         !savePrincess.

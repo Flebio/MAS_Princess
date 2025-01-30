@@ -7,6 +7,7 @@ public abstract class Resource {
     private final String name;
     private boolean team;
     private Pose pose;
+    private boolean carried = false;
 
     public Resource(String name, boolean team, Pose pose) {
         this.name = name;
@@ -26,6 +27,18 @@ public abstract class Resource {
 
     public void setPose(Pose pose) {
         this.pose = pose;
+    }
+
+    public boolean isCarried() { return carried; }
+
+    public void pickedUp() {
+        if (!carried) {
+            carried = true;
+        }
+    }
+
+    public void dropped() {
+        carried = false;
     }
 
     @Override

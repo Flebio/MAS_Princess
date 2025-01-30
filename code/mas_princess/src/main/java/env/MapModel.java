@@ -72,4 +72,6 @@ public interface MapModel {
     Set<Princess> getAllyPrincessNeighbours(Agent agent, int range);
     Optional<Princess> getPrincessByName(String pName);
 
+    boolean pickUpPrincess(Agent agent, Princess target);
+
 }
