@@ -13,8 +13,8 @@ public class BlackForestModel implements MapModel {
     private final GameMap gameMap;
     private long fps = 1L;
 
-    public BlackForestModel(int width, int height) {
-        this.gameMap = new GameMap(width, height);
+    public BlackForestModel(int width, int height, MapView view) {
+        this.gameMap = new GameMap(width, height, view);
     }
 
     @Override
@@ -165,5 +165,11 @@ public class BlackForestModel implements MapModel {
 
     @Override
     public boolean pickUpPrincess(Agent agent, Princess target) {return this.gameMap.pickUpPrincess(agent, target);}
+
+    @Override
+    public void setView(MapView view) {
+        this.gameMap.setView(view);
+    }
+
 
 }

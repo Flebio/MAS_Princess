@@ -1,5 +1,7 @@
 package env.utils;
 
+import env.BlackForestView;
+import env.MapView;
 import env.agents.*;
 import env.objects.structures.*;
 import env.objects.resources.*;
@@ -24,10 +26,14 @@ public class GameMap {
     private final ReadWriteLock mapLock = new ReentrantReadWriteLock();
     private static final Random RAND = new Random();
 
-    public GameMap(int width, int height) {
+    private MapView view; // Keep reference to the existing view
+
+
+    public GameMap(int width, int height, MapView view) {
         this.width = Objects.requireNonNull(width);
         this.height = Objects.requireNonNull(height);
         this.map = new Cell[width][height];
+        this.view = view;
         createZones();
         addStructures();
         addResources();
@@ -530,8 +536,10 @@ public class GameMap {
                 if (agentCell.getAgent().getCarriedItem() != null) {
                     agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
                 }
-
+                //view.triggerDeathView(agentCell.getPosition());
                 agentCell.clearAgent();
+
+
 
             }
         } finally {
@@ -614,6 +622,8 @@ public class GameMap {
 
     public boolean attackAgent(Agent attacking_agent, Agent target) {
         synchronized (target) {
+            view.triggerAttackView(attacking_agent.getPose().getPosition());
+            view.triggerDamageView(target.getPose().getPosition());
             int newHp = target.getHp() - attacking_agent.getAttackPower();
             target.setHp(newHp);
         }
@@ -622,6 +632,8 @@ public class GameMap {
 
     public boolean attackGate(Agent attacking_agent, Gate target) {
         target.takeDamage(attacking_agent.getAttackPower());
+        view.triggerAttackView(attacking_agent.getPose().getPosition());
+        view.triggerDamageView(target.getPose().getPosition());
 
         return true;
     }
@@ -629,6 +641,8 @@ public class GameMap {
     public boolean attackTree(Agent attacking_agent, Tree target) {
         synchronized (target) {
             target.takeDamage(attacking_agent.getAttackPower());
+            view.triggerAttackView(attacking_agent.getPose().getPosition());
+            view.triggerDamageView(target.getPose().getPosition());
         }
         return true;
     }
@@ -1046,5 +1060,9 @@ public class GameMap {
         } finally {
             mapLock.writeLock().unlock();
         }
+    }
+
+    public void setView(MapView view) {
+        this.view = view;
     }
 }

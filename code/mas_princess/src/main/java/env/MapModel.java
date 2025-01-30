@@ -74,4 +74,6 @@ public interface MapModel {
 
     boolean pickUpPrincess(Agent agent, Princess target);
 
+    void setView(MapView view);
+
 }

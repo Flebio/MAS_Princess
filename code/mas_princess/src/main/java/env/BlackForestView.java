@@ -498,7 +498,10 @@ public class BlackForestView extends JFrame implements MapView {
             ImageIcon effectSprite = new ImageIcon(getClass().getResource(spritePath));
             ImageIcon previousIcon = (ImageIcon) cellLabel.getIcon(); // Save the current icon
 
-            cellLabel.setIcon(effectSprite); // Set the temporary effect
+            // ✅ Blend the effect with the existing background
+            Image combinedImage = createImageWithTransparency(previousIcon, effectSprite.getImage());
+
+            cellLabel.setIcon(new ImageIcon(combinedImage)); // Set the blended effect
             cellLabel.revalidate();
             cellLabel.repaint();
 
@@ -512,6 +515,16 @@ public class BlackForestView extends JFrame implements MapView {
             timer.setRepeats(false); // Ensure it runs only once
             timer.start();
         }
+    }
+
+    public void triggerAttackView(Vector2D position) {
+        showTemporaryEffect(position, "/sprites/attack.png", 250);
+    }
+    public void triggerDamageView(Vector2D position) {
+        showTemporaryEffect(position, "/sprites/damage.png", 250);
+    }
+    public void triggerDeathView(Vector2D position) {
+        showTemporaryEffect(position, "/sprites/dead.png", 500);
     }
 
 

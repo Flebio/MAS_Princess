@@ -30,11 +30,15 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
     @Override
     public void init(final String[] args) {
-        this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
-        BlackForestView view = new BlackForestView(model);
-        this.view = view;
+        this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]), null);
+
+        this.view = new BlackForestView(model);
+
+        this.model.setView(this.view);
+
         view.setVisible(true);
     }
+
 
     @Override
     public void notifyModelChangedToView() {
