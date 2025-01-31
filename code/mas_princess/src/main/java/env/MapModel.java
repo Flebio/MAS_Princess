@@ -6,6 +6,7 @@ import env.agents.*;
 import env.objects.structures.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +56,7 @@ public interface MapModel {
     }
     Pair<String, Vector2D> getClosestObjective(Agent agent);
     Set<Agent> getAgentNeighbours(Agent agent, int range);
-    Set<Gate> getEnemyGateNeighbours(Agent agent, int range);
+    Set<Gate> getGateNeighbours(Agent agent, String team, int range);
     Set<Tree> getTreeNeighbours(Agent agent, int range);
     default Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent) {
         Vector2D pos = this.getAgentPosition(agent);
@@ -67,9 +68,10 @@ public interface MapModel {
         // Maybe here we can do something for the range
     }
     boolean attackGate(Agent attacking_agent, Gate target);
+    boolean repairGate(Agent attacking_agent, Gate target);
     boolean attackTree(Agent attacking_agent, Tree target);
 
-    Set<Princess> getAllyPrincessNeighbours(Agent agent, int range);
+    Set<Princess> getPrincessNeighbours(Agent agent, String team, int range);
     Optional<Princess> getPrincessByName(String pName);
 
     boolean pickUpPrincess(Agent agent, Princess target);
@@ -77,5 +79,12 @@ public interface MapModel {
     void setView(MapView view);
 
     void addWood(Agent agent);
+
+    boolean isEnoughWoodRed();
+    boolean isEnoughWoodBlue();
+    AtomicInteger getWoodAmountBlue();
+    AtomicInteger getWoodAmountRed();
+
+    public boolean avoidTrees(Agent agent);
 
 }

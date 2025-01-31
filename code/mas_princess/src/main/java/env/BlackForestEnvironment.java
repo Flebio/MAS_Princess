@@ -16,6 +16,7 @@ import jason.environment.Environment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -104,10 +105,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 personalBeliefsPercepts(agent).stream(),
                         Stream.concat(
                                 surroundingPercepts(agent).stream(),
-                                Stream.concat(
-                                        inRangePercepts(agent).stream(),
-                                        inSightPercepts(agent).stream()
-                                        )
+                                inRangePercepts(agent).stream()
                         )
         ).collect(Collectors.toList());
     }
@@ -189,40 +187,45 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 .collect(Collectors.toList()));
 
         // Add percepts for enemy gates in range
-        in_range.addAll(model.getEnemyGateNeighbours(agent, agent.getAttackRange()).stream()
+        in_range.addAll(model.getGateNeighbours(agent, "enemy", agent.getAttackRange()).stream()
                 .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList()));
 
-        // Add percepts for trees in range
-        in_range.addAll(model.getTreeNeighbours(agent, agent.getAttackRange()).stream()
-                .map(tree -> String.format("tree_in_range(%s, %d)", tree.getName(), tree.getHp()))
+        if (agent instanceof Gatherer) {
+            // Add percepts for ally gates in range
+            in_range.addAll(model.getGateNeighbours(agent, "ally", agent.getAttackRange()).stream()
+                    .map(gate -> String.format("ally_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
+                    .map(Literal::parseLiteral)
+                    .collect(Collectors.toList()));
+
+            if (!model.avoidTrees(agent)) {
+                // Add percepts for trees in range
+                in_range.addAll(model.getTreeNeighbours(agent, agent.getAttackRange()).stream()
+                        .map(tree -> String.format("tree_in_range(%s, %d)", tree.getName(), tree.getHp()))
+                        .map(Literal::parseLiteral)
+                        .collect(Collectors.toList()));
+            }
+        }
+
+        // Add percepts for princess in range
+        in_range.addAll(model.getPrincessNeighbours(agent, "ally", 1).stream()
+                .map(princess -> String.format("ally_princess_in_range(%s)", princess.getName()))
                 .map(Literal::parseLiteral)
                 .collect(Collectors.toList()));
 
-        // Add percepts for princess in range
-        in_range.addAll(model.getAllyPrincessNeighbours(agent, 1).stream()
-                .map(princess -> String.format("princess_in_range(%s)", princess.getName()))
-                .map(Literal::parseLiteral)
-                .collect(Collectors.toList()));
-        //System.out.println(model.getEnemyGateNeighbours(agent, agent.getAttackRange()));
+        if (!((this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.BBASE) ||
+                (this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.RBASE))) {
+
+            in_range.addAll(model.getPrincessNeighbours(agent, "enemy", 1).stream()
+                    .map(princess -> String.format("enemy_princess_in_range(%s)", princess.getName()))
+                    .map(Literal::parseLiteral)
+                    .collect(Collectors.toList()));
+        }
+
         return in_range;
     }
 
-
-    @Override
-    public Collection<Literal> inSightPercepts(Agent agent) {
-        Collection<Literal> in_sight = model.getAgentNeighbours(agent, 5).stream()
-                .map(it -> {
-                    String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_sight" : "enemy_in_sight";
-                    return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
-                })
-                .map(Literal::parseLiteral)
-                .collect(Collectors.toList());
-
-//        logger.info("in_sight(" + agent.getName() + ") -> " + in_sight);
-        return in_sight;
-    }
     @Override
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
@@ -264,6 +267,13 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.attackGate(agent, target.get());
             notifyModelChangedToView();
+        }else if (action.toString().contains("repair_gate")) {
+            Optional<Gate> target = this.model.getGateByName(action.getTerm(0).toString());
+            if (target.get() == null) {
+                return false;
+            }
+            result = model.repairGate(agent, target.get());
+            notifyModelChangedToView();
         }else if (action.toString().contains("attack_tree")) {
             Optional<Tree> target = this.model.getTreeByName(action.getTerm(0).toString());
             if (target.get() == null) {
@@ -280,8 +290,16 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             notifyModelChangedToView();
 
         }else if (action.toString().contains("respawn")) {
-            result = model.respawnAgent(agent);
             notifyModelChangedToView();
+
+            try {
+                Thread.sleep(5000L / model.getFPS());
+            } catch (InterruptedException ignored) {
+
+            }
+//            result = model.respawnAgent(agent);
+            return true;
+
         } else{
             logger.warning("Unknown action: " + action);
             return false;
@@ -291,14 +309,10 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         try {
 //            Thread.sleep(1000L / model.getFPS());
-            if (action.toString().contains("respawn")) {
-                Thread.sleep(5000L / model.getFPS());
-            } else {
-//                Thread.sleep(500L / model.getFPS());
-                Thread.sleep(400L / model.getFPS());
-            }
+            Thread.sleep(300L / model.getFPS());
         } catch (InterruptedException ignored) {
         }
+
         return result;
     }
 

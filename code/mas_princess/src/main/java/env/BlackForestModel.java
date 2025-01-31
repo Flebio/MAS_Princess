@@ -7,6 +7,7 @@ import env.objects.resources.*;
 
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class BlackForestModel implements MapModel {
@@ -110,6 +111,10 @@ public class BlackForestModel implements MapModel {
     public boolean attackGate(Agent attacking_agent, Gate target) {
         return this.gameMap.attackGate(attacking_agent, target);
     }
+    @Override
+    public boolean repairGate(Agent attacking_agent, Gate target) {
+        return this.gameMap.repairGate(attacking_agent, target);
+    }
 
     @Override
     public boolean attackTree(Agent attacking_agent, Tree target) {
@@ -139,8 +144,8 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public Set<Gate> getEnemyGateNeighbours(Agent agent, int range) {
-        return this.gameMap.getEnemyGateNeighbours(agent, range);
+    public Set<Gate> getGateNeighbours(Agent agent, String team, int range) {
+        return this.gameMap.getGateNeighbours(agent, team, range);
     }
 
     @Override
@@ -156,8 +161,8 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public Set<Princess> getAllyPrincessNeighbours(Agent agent, int range) {
-        return this.gameMap.getAllyPrincessNeighbours(agent, range);
+    public Set<Princess> getPrincessNeighbours(Agent agent, String team, int range) {
+        return this.gameMap.getPrincessNeighbours(agent, team, range);
     }
 
     @Override
@@ -174,5 +179,47 @@ public class BlackForestModel implements MapModel {
     @Override
     public synchronized void addWood(Agent agent) { this.gameMap.addWood(agent);}
 
+    @Override
+    public boolean isEnoughWoodRed() { return this.gameMap.isEnoughWoodRed(); }
+
+    @Override
+    public boolean isEnoughWoodBlue() { return this.gameMap.isEnoughWoodBlue(); }
+
+    @Override
+    public boolean avoidTrees(Agent agent) {
+        boolean isBlueTeam = !agent.getTeam();
+        boolean isRedTeam = agent.getTeam();
+
+        boolean hasEnoughWoodBlue = this.isEnoughWoodBlue();
+        boolean hasEnoughWoodRed = this.isEnoughWoodRed();
+
+        boolean blueGateDestroyed = this.getGateByName("gate_b1").get().isDestroyed() ||
+                this.getGateByName("gate_b2").get().isDestroyed();
+        boolean redGateDestroyed = this.getGateByName("gate_r1").get().isDestroyed() ||
+                this.getGateByName("gate_r2").get().isDestroyed();
+
+        // If the agent is on the blue team and meets the conditions, avoid trees
+        if (isBlueTeam && hasEnoughWoodBlue && blueGateDestroyed) {
+            return true;
+        }
+
+        // If the agent is on the red team and meets the conditions, avoid trees
+        if (isRedTeam && hasEnoughWoodRed && redGateDestroyed) {
+            return true;
+        }
+
+        return false; // Otherwise, do not avoid trees
+    }
+
+
+    @Override
+    public AtomicInteger getWoodAmountRed() {
+        return gameMap.getWoodAmountRed();
+    }
+
+    @Override
+    public AtomicInteger getWoodAmountBlue() {
+        return gameMap.getWoodAmountBlue();
+    }
 
 }

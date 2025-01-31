@@ -5,14 +5,26 @@ att_damage(10).
 p1(0.0).
 p2(0.0).
 
-!savePrincess.
+!spawn.
+
++!spawn
+    <-
+        //.wait(5000);
+        -+hp(100);
+        !savePrincess.
+
+-!spawn
+    <-
+        .wait(5000).
+        !savePrincess.
 
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
         ?check_hp(HP);
-        ?princessInRange(S);
+        ?allyPrincessInRange(S);
+        ?enemyPrincessInRange(S);
         ?enemyInRange(S, update_hp(AD));
-        ?gateInRange(S);
+        ?enemyGateInRange(S);
         !move_towards_objective.
 
 -!savePrincess
@@ -25,8 +37,7 @@ p2(0.0).
         .drop_all_desires;
         .print("Dead. Respawning...");
         respawn(true);
-        -+hp(100);
-        !savePrincess.
+        !spawn.
 
 -?check_hp(HP)
     <-
@@ -53,7 +64,7 @@ p2(0.0).
         //.fail.
         //.print("I got zero enemies.").
 
-+?gateInRange(S)
++?enemyGateInRange(S)
     <-
         //.print("Checking if gate is in range...");
         utils.check_in_range(enemy_gate_in_range);
@@ -61,26 +72,40 @@ p2(0.0).
         attack_gate(T);
         !savePrincess.
 
--?gateInRange(S)
+-?enemyGateInRange(S)
     <-
         .wait(1).
         //.fail.
         //.print("I got zero gates.").
 
-
-+?princessInRange(S)
++?allyPrincessInRange(S)
     <-
         //.print("Checking if princess is in range...");
-        utils.check_in_range(princess_in_range);
+        utils.check_in_range(ally_princess_in_range);
         ?(target(T)); // Test goal: Checks for enemies in range
         pick_up_princess(T);
         !savePrincess.
 
--?princessInRange(S)
+-?allyPrincessInRange(S)
     <-
         .wait(1).
         //.fail.
         //.print("I got zero princesses.").
+
++?enemyPrincessInRange(S)
+    <-
+        //.print("Checking if princess is in range...");
+        utils.check_in_range(enemy_princess_in_range);
+        ?(target(T)); // Test goal: Checks for enemies in range
+        pick_up_princess(T);
+        !savePrincess.
+
+-?enemyPrincessInRange(S)
+    <-
+        .wait(1).
+        //.fail.
+        //.print("I got zero princesses.").
+
 
 /* Move towards the gate based on position in the base */
 /* We prefer to go first in the direction that is farther from our position instead of (X >= 0.5).

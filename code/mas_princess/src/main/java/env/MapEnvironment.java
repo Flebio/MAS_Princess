@@ -25,6 +25,4 @@ public interface MapEnvironment {
 
     Collection<Literal> inRangePercepts(Agent agent);
 
-    Collection<Literal> inSightPercepts(Agent agent);
-
 }

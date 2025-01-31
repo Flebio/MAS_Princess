@@ -17,12 +17,14 @@ public class BreakableStructure extends MapStructure {
     public void takeDamage(int damage) {
         if (this.isBreakable() && this.getHp() >= 0) {
             this.setHp(Math.max(this.getHp() - damage, 0));
+        } else {
+            
         }
     }
 
-    public void repair(int amount) {
-        if (this.isRepairable() && this.getHp() < this.getMaxHp()) {
-            this.setHp(Math.min(this.getHp() + amount, this.getMaxHp()));
+    public void repair() {
+        if (this.isRepairable() && this.isDestroyed()) {
+            this.setHp(this.getMaxHp());
         }
     }
 }

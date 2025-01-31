@@ -38,6 +38,9 @@ public class BlackForestView extends JFrame implements MapView {
 
 
 
+
+
+
     // Constructor
     public BlackForestView(MapModel model) {
         this.model = Objects.requireNonNull(model);
@@ -58,9 +61,14 @@ public class BlackForestView extends JFrame implements MapView {
         // Create the agent status panel
         JPanel agentStatusPanel = createAgentStatusPanel();
 
+        // Create the resource panel
+        JPanel resourcePanel = createResourcePanel();
+
+
         // Add panels to the main container
         contentPane.add(gridPanel, BorderLayout.CENTER); // Map grid in the center
         contentPane.add(agentStatusPanel, BorderLayout.SOUTH); // Agent statuses at the bottom
+        contentPane.add(resourcePanel, BorderLayout.WEST); // Add it to the left side
 
         setContentPane(contentPane);
         pack();
@@ -97,17 +105,134 @@ public class BlackForestView extends JFrame implements MapView {
 
     // Create the agent status panel
     private JPanel createAgentStatusPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Agent Status"));
+        int fixedHeight = 250; // Set your preferred height
 
-        // Use WrapLayout for the agent container
+        // Main panel with a fixed height and variable width
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createTitledBorder("Agent Status"));
+        panel.setPreferredSize(new Dimension(panel.getPreferredSize().width, fixedHeight));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, fixedHeight));
+
+        // Container for agent statuses (will scroll if too many agents)
         JPanel agentStatusContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 40));
-        panel.add(agentStatusContainer, BorderLayout.CENTER); // Add the container directly
+
+        // Wrap it inside a JScrollPane
+        JScrollPane scrollPane = new JScrollPane(agentStatusContainer);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setPreferredSize(new Dimension(panel.getPreferredSize().width, fixedHeight - 20)); // Adjust for title bar
+
+        panel.add(scrollPane);
 
         // Save the container for dynamic updates
         this.agentStatusContainer = agentStatusContainer;
 
         return panel;
+    }
+
+    private JLabel woodBlueLabel;
+    private JLabel woodRedLabel;
+    private JLabel princessBlueLabel;
+    private JLabel princessRedLabel;
+
+    private JPanel createResourcePanel() {
+        int resourceWidth = 85;
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+
+                int halfHeight = getHeight() / 2;
+
+                // Define colors (lighter blue and red)
+                Color lightBlue = new Color(173, 216, 230); // Light Sky Blue
+                Color lightRed = new Color(255, 182, 193); // Light Pink
+
+                // Fill top half with light blue
+                g2d.setColor(lightBlue);
+                g2d.fillRect(0, 0, getWidth(), halfHeight);
+
+                // Fill bottom half with light red
+                g2d.setColor(lightRed);
+                g2d.fillRect(0, halfHeight, getWidth(), getHeight());
+            }
+        };
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); // Stack elements vertically
+        panel.setBorder(BorderFactory.createTitledBorder("Game Infos"));
+        panel.setPreferredSize(new Dimension(resourceWidth, panel.getPreferredSize().height));
+        panel.setMaximumSize(new Dimension(resourceWidth, Integer.MAX_VALUE - 2));
+
+        // Load icons
+        ImageIcon woodBlueIcon = new ImageIcon(getClass().getResource("/sprites/wood_blue.png"));
+        ImageIcon woodRedIcon = new ImageIcon(getClass().getResource("/sprites/wood_red.png"));
+        ImageIcon princessBlueIcon = princessSprites.get("blue");
+        ImageIcon princessRedIcon = princessSprites.get("red");
+
+        // Create labels for icons
+        JLabel woodBlueImage = new JLabel(woodBlueIcon);
+        JLabel woodRedImage = new JLabel(woodRedIcon);
+        JLabel princessBlueImage = new JLabel(princessBlueIcon);
+        JLabel princessRedImage = new JLabel(princessRedIcon);
+
+        // Create fixed text labels with custom colors
+        JLabel blueTeamLabel = new JLabel("Blue Team");
+        blueTeamLabel.setForeground(Color.BLUE);
+        blueTeamLabel.setFont(new Font("Arial", Font.BOLD, 14));
+
+        JLabel redTeamLabel = new JLabel("Red Team");
+        redTeamLabel.setForeground(Color.RED);
+        redTeamLabel.setFont(new Font("Arial", Font.BOLD, 14));
+
+        // Create labels for values
+        woodBlueLabel = new JLabel("0");
+        woodBlueLabel.setForeground(Color.BLUE);
+        woodRedLabel = new JLabel("0");
+        woodRedLabel.setForeground(Color.RED);
+        princessBlueLabel = new JLabel("On ground");
+        princessBlueLabel.setForeground(Color.BLUE);
+        princessRedLabel = new JLabel("On ground");
+        princessRedLabel.setForeground(Color.RED);
+
+        // Center text below icons
+        woodBlueLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        woodRedLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        princessBlueLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        princessRedLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Add components with spacing
+        panel.add(Box.createVerticalStrut(7));
+        panel.add(blueTeamLabel);
+        panel.add(Box.createVerticalStrut(7));
+        panel.add(princessBlueImage);
+        panel.add(princessBlueLabel);
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(woodBlueImage);
+        panel.add(woodBlueLabel);
+
+        panel.add(Box.createVerticalGlue());
+
+        panel.add(woodRedImage);
+        panel.add(woodRedLabel);
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(princessRedImage);
+        panel.add(princessRedLabel);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(redTeamLabel);
+
+        return panel;
+    }
+
+    private void updateResourcePanel() {
+        woodBlueLabel.setText(String.valueOf(model.getWoodAmountBlue().get()));
+        woodRedLabel.setText(String.valueOf(model.getWoodAmountRed().get()));
+        if (model.getPrincessByName("princess_b").get().isCarried()){
+            princessBlueLabel.setText("Picked Up");
+        }
+        if (model.getPrincessByName("princess_r").get().isCarried()){
+            princessRedLabel.setText("Picked Up");
+        }
     }
 
 
@@ -173,7 +298,7 @@ public class BlackForestView extends JFrame implements MapView {
         outOfMapSprites[0] = new ImageIcon(getClass().getResource("/sprites/river1.png"));
         outOfMapSprites[1] = new ImageIcon(getClass().getResource("/sprites/river2.png"));
 
-    // Add multiple battlefield sprites
+        // Add multiple battlefield sprites
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield1.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield2.png")));
@@ -468,7 +593,7 @@ public class BlackForestView extends JFrame implements MapView {
     }
 
 
-        // Create a new image by combining existing image and overlay icon
+    // Create a new image by combining existing image and overlay icon
     private Image createImageWithTransparency(ImageIcon baseImage, Image overlayImage) {
         Image background = baseImage != null ? baseImage.getImage() : null;
         int width = background != null ? background.getWidth(null) : overlayImage.getWidth(null);
@@ -538,8 +663,10 @@ public class BlackForestView extends JFrame implements MapView {
         SwingUtilities.invokeLater(() -> {
             refreshBackground();
             updateAgentList();
+            updateResourcePanel(); // New method to refresh wood count
         });
     }
+
 
     @Override
     public MapModel getModel() {
