@@ -2,36 +2,44 @@ package env.objects.structures;
 
 import env.utils.*;
 
-// Tree structure
 public class Tree extends BreakableStructure {
     private final int respawnDuration;
-    private int remainingRespawnTime;
+
 
     public Tree(String name, int maxLife, int respawnDuration, Pose pose) {
-        super(name, true, false,  maxLife, null, pose); // Trees are breakable, not repairable
+        super(name, true, false, maxLife, null, pose); // Trees are breakable, not repairable
         this.respawnDuration = respawnDuration;
-        this.remainingRespawnTime = 0;
     }
 
-    public boolean isActive() {
-        return remainingRespawnTime == 0;
-    }
+    private boolean respawning = false;
 
+    public boolean isRespawning() { return this.respawning; }
     @Override
     public void takeDamage(int damage) {
         if (!isDestroyed()) {
             super.takeDamage(damage);
-        } else {
-            remainingRespawnTime = respawnDuration;
+            if (isDestroyed()) {
+                startRespawnTimer();
+            }
         }
     }
 
-    public void updateRespawnTimer() {
-        if (remainingRespawnTime > 0) {
-            remainingRespawnTime--;
-             // Trees fully regenerate after respawn
-        } else if (remainingRespawnTime == 0) {
-            repair(getMaxHp());
-        }
+    private void startRespawnTimer() {
+        setWalkable(true);
+        respawning = true;
+        new Thread(() -> {
+            try {
+                Thread.sleep(respawnDuration);  // Wait before respawning
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            respawn();
+        }).start();
+    }
+
+    private void respawn() {
+        setHp(getMaxHp());
+        setWalkable(false);
+        System.out.println(getName() + " has respawned!");
     }
 }

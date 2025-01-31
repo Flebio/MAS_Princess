@@ -76,4 +76,6 @@ public interface MapModel {
 
     void setView(MapView view);
 
+    void addWood(Agent agent);
+
 }

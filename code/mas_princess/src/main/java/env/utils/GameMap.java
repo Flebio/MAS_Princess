@@ -294,7 +294,7 @@ public class GameMap {
         for (int i = 1; i <= treeCount && !spawnableCells.isEmpty(); i++) {
             int index = RAND.nextInt(spawnableCells.size());
             Cell selectedCell = spawnableCells.remove(index);
-            Tree tree = new Tree("tree_" + i, 50, 20, new Pose(new Vector2D(selectedCell.getX(), selectedCell.getY()), Orientation.SOUTH));
+            Tree tree = new Tree("tree_" + i, 50, 30000, new Pose(new Vector2D(selectedCell.getX(), selectedCell.getY()), Orientation.SOUTH));
             selectedCell.setStructure(tree);
             structuresList.put(tree.getName(), tree);
         }
@@ -631,18 +631,25 @@ public class GameMap {
     }
 
     public boolean attackGate(Agent attacking_agent, Gate target) {
-        target.takeDamage(attacking_agent.getAttackPower());
         view.triggerAttackView(attacking_agent.getPose().getPosition());
         view.triggerDamageView(target.getPose().getPosition());
+        target.takeDamage(attacking_agent.getAttackPower());
 
         return true;
     }
 
+    public synchronized void addWood(Agent agent) {
+        if (agent.getTeam()) {
+            woodAmountBlue.incrementAndGet();
+        } else if (!agent.getTeam()) {
+            woodAmountRed.incrementAndGet();
+        }
+    }
     public boolean attackTree(Agent attacking_agent, Tree target) {
         synchronized (target) {
-            target.takeDamage(attacking_agent.getAttackPower());
             view.triggerAttackView(attacking_agent.getPose().getPosition());
             view.triggerDamageView(target.getPose().getPosition());
+            target.takeDamage(attacking_agent.getAttackPower());
         }
         return true;
     }
@@ -673,14 +680,20 @@ public class GameMap {
     }
 
     private Pair<String, Vector2D> findClosestStructure(Agent agent, Class<? extends MapStructure> structureClass, Predicate<MapStructure> filter, String stateName) {
+        Predicate<MapStructure> combinedFilter = structure -> {
+            if (structure instanceof Tree tree) {
+                return !tree.isDestroyed() && (filter == null || filter.test(structure));
+            }
+            return filter == null || filter.test(structure);
+        };
+
         List<Cell> structures = getAllCells(
                 null,
-                structureClass, filter,
+                structureClass, combinedFilter,
                 null, null, // No resource filtering
                 null, null, // No agent filtering
                 true
         );
-
 
         Vector2D agentPosition = agent.getPose().getPosition();
         Vector2D closestPosition = null;
@@ -697,11 +710,14 @@ public class GameMap {
         return closestPosition != null ? new Pair<>(stateName, closestPosition) : null;
     }
 
+
     private double calculateDistance(Vector2D pos1, Vector2D pos2) {
         return Math.sqrt(
                 Math.pow(pos1.getX() - pos2.getX(), 2) + Math.pow(pos1.getY() - pos2.getY(), 2)
         );
     }
+
+
 
     public Pair<String, Vector2D> getClosestObjectiveSoldier(Agent agent) {
 //

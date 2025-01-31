@@ -7,7 +7,7 @@ public abstract class MapStructure {
     private final String name;
     private final boolean breakable;
     private final boolean repairable;
-    private final Boolean walkable;
+    private Boolean walkable;
     private final int max_hp;
     final Boolean team;
     private int hp;
@@ -37,6 +37,7 @@ public abstract class MapStructure {
     public boolean isWalkable() {
         return walkable;
     }
+    public void setWalkable(Boolean walkable) { this.walkable = walkable; }
 
     public int getMaxHp() {
         return max_hp;

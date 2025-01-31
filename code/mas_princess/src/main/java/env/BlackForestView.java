@@ -438,8 +438,13 @@ public class BlackForestView extends JFrame implements MapView {
             return new ImageIcon(getClass().getResource("/sprites/wall.png"));
         } else if (structure instanceof Bridge) {
             return new ImageIcon(getClass().getResource("/sprites/bridge.png"));
-        } else if (structure instanceof Tree) {
-            return new ImageIcon(getClass().getResource("/sprites/tree.png"));
+        } else if (structure instanceof Tree tree) {
+            if (tree.isDestroyed()) {
+                return new ImageIcon(getClass().getResource("/sprites/cuttree.png"));
+            } else {
+                return new ImageIcon(getClass().getResource("/sprites/tree.png"));
+
+            }
         }
         return null; // No structure icon if not recognized
     }

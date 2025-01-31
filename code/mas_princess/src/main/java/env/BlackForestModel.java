@@ -171,5 +171,8 @@ public class BlackForestModel implements MapModel {
         this.gameMap.setView(view);
     }
 
+    @Override
+    public synchronized void addWood(Agent agent) { this.gameMap.addWood(agent);}
+
 
 }
