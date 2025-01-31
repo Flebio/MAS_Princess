@@ -5,13 +5,13 @@ MAS princess {
 	environment: env.BlackForestEnvironment(40, 20)
 
 	agents: // which agents partecipates the MAS?
-	    gatherer_b0 gatherer_agent;
+	    //gatherer_b0 gatherer_agent;
 		//archer_b1 archer_agent;
 		//archer_b4 archer_agent;
-		warrior_b2 warrior_agent;
-		warrior_b3 warrior_agent;
+		//warrior_b2 warrior_agent;
+		//warrior_b3 warrior_agent;
 
-	    gatherer_r0 gatherer_agent;
+	    //gatherer_r0 gatherer_agent;
 		archer_r1 archer_agent;
 		archer_r4 archer_agent;
         warrior_r2 warrior_agent;

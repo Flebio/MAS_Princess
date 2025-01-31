@@ -125,10 +125,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 //            closest_objective = this.model.getClosestObjective(agent);
         }
 
-        personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
         personalBeliefs.add(Literal.parseLiteral(String.format("objective(%s)", closest_objective.getFirst())));
         personalBeliefs.add(Literal.parseLiteral(String.format("objective_position(%d,%d)", closest_objective.getSecond().getX(), closest_objective.getSecond().getY())));
 
+        if ( (closest_objective.getFirst().equals("my_team_lost")) || (closest_objective.getFirst().equals("my_team_won"))) {
+            personalBeliefs.add(Literal.parseLiteral("state(end)"));
+        } else {
+            personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
+        }
         // If for each agent we get its position and team we can give information
         // about where each ally and enemy are
         // for ag in this.model.getAllAgents():
@@ -290,16 +294,8 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             notifyModelChangedToView();
 
         }else if (action.toString().contains("respawn")) {
+            result = model.respawnAgent(agent);
             notifyModelChangedToView();
-
-            try {
-                Thread.sleep(5000L / model.getFPS());
-            } catch (InterruptedException ignored) {
-
-            }
-//            result = model.respawnAgent(agent);
-            return true;
-
         } else{
             logger.warning("Unknown action: " + action);
             return false;
@@ -309,7 +305,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         try {
 //            Thread.sleep(1000L / model.getFPS());
-            Thread.sleep(300L / model.getFPS());
+            if (action.toString().contains("respawn")) {
+                Thread.sleep(5000L / model.getFPS());
+            } else {
+                Thread.sleep(300L / model.getFPS());
+            }
         } catch (InterruptedException ignored) {
         }
 

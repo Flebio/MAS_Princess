@@ -698,9 +698,9 @@ public class GameMap {
             int newHp = target.getHp() - attacking_agent.getAttackPower();
             target.setHp(newHp);
 
-            if (target.getHp() <= 0) {
-                respawnAgent(target);
-            }
+//            if (target.getHp() <= 0) {
+//                respawnAgent(target);
+//            }
         }
         return true;
     }

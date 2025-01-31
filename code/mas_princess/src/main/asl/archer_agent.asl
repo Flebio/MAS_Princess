@@ -21,6 +21,7 @@ p2(0.0).
 
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
+        ?check_win(S);
         ?check_hp(HP);
         ?allyPrincessInRange(S);
         ?enemyPrincessInRange(S);
@@ -32,10 +33,22 @@ p2(0.0).
     <-
         !savePrincess.
 
++?check_win(S)
+    <-
+        ?(S == end);
+        .drop_all_desires;
+        .drop_all_events;
+        .print("Game finished.").
+
+-?check_win(S)
+    <-
+        .wait(1).
+
 +?check_hp(HP)
     <-
         ?(HP <= 0);
         .drop_all_desires;
+        .drop_all_events;
         .print("Dead. Respawning...");
         respawn(true);
         !spawn.
