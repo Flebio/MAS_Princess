@@ -41,7 +41,6 @@ public interface MapModel {
     public Optional<Gate> getGateByName(String gName);
     public Optional<Tree> getTreeByName(String tName);
 
-    public  boolean respawnAgent(Agent agent);
     // Map
     Cell getCellByPosition(Vector2D position);
     boolean isPositionInside(int x, int y);

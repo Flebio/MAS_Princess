@@ -96,24 +96,28 @@ public class Cell {
         // If there is a structure, validate its conditions
         if (structure != null && movingAgent != null) {
             if (structure.isWalkable()) {
-                // Not a Gate -> Not occupied
-                if (!(structure instanceof Gate)) {
+                // Is a Tree and destroyed -> Not occupied
+                if (structure instanceof Tree && ((Tree) structure).isDestroyed()) {
                     return false;
                 }
-                // Is a Gate and belongs to the same team as the agent -> Not occupied
-                if (structure instanceof Gate && ((Gate) structure).getTeam() == movingAgent.getTeam()) {
-                    return false;
-                }
+
                 // Is a Gate and destroyed -> Not occupied
                 if (structure instanceof Gate && ((Gate) structure).isDestroyed()) {
                     return false;
                 }
+
+                // Is a Gate and belongs to the same team as the agent -> Not occupied
+                if (structure instanceof Gate && ((Gate) structure).getTeam() == movingAgent.getTeam()) {
+                    return false;
+                }
+
+                // Other cases -> Not occupied
+                return false;
             }
         } else if (agent != null && movingResource != null) {
             // If there's an agent in the cell and the moving resource has the same team -> not occupato
             if (agent.getCarriedItem().equals(movingResource)) {
                 return false;
-
             }
         }
 

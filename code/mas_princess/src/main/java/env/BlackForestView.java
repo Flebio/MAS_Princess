@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class BlackForestView extends JFrame implements MapView {
 
@@ -35,11 +37,6 @@ public class BlackForestView extends JFrame implements MapView {
     });
 
     private final ImageIcon crownIcon = new ImageIcon(getClass().getResource("/sprites/crown.png"));
-
-
-
-
-
 
     // Constructor
     public BlackForestView(MapModel model) {
@@ -105,7 +102,7 @@ public class BlackForestView extends JFrame implements MapView {
 
     // Create the agent status panel
     private JPanel createAgentStatusPanel() {
-        int fixedHeight = 250; // Set your preferred height
+        int fixedHeight = 350;
 
         // Main panel with a fixed height and variable width
         JPanel panel = new JPanel();
@@ -235,38 +232,81 @@ public class BlackForestView extends JFrame implements MapView {
         }
     }
 
-
     // Update the agent list dynamically
     private void updateAgentList() {
         agentStatusContainer.removeAll(); // Clear the container
 
-        for (Agent agent : model.getAllAgents()) {
-            // Create a label for each agent
-            JLabel agentLabel = new JLabel();
-            if (agent.getCarriedItem() == null) {
-                agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
-                        agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
-            } else {
-                agentLabel = new JLabel(String.format("<html>%s<br>HP: %d<br>Pos: %s<br>St: %s</html>",
-                        agent.getName(), agent.getHp(), agent.getPose().getPosition(), agent.getState()));
-            }
+        // Sort agents: first by team (false -> blue, true -> red), then alphabetically
+        List<Agent> sortedAgents = model.getAllAgents().stream()
+                .sorted(Comparator.comparing(Agent::getTeam)
+                        .thenComparing(Agent::getName))
+                .collect(Collectors.toList());
+
+        // Separate teams into two rows
+        JPanel blueTeamRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        JPanel redTeamRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+
+        for (Agent agent : sortedAgents) {
+            // Create a panel to contain the agent's information
+            JPanel agentPanel = new JPanel();
+            agentPanel.setLayout(new BoxLayout(agentPanel, BoxLayout.Y_AXIS)); // Vertical layout
+            agentPanel.setPreferredSize(new Dimension(160, 120)); // Fixed size for uniformity
+            agentPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+            agentPanel.setBackground(new Color(230, 230, 230)); // Light gray background
+
+            // Create a label for the agent's name
+            JLabel nameLabel = new JLabel(agent.getName(), SwingConstants.CENTER);
+            nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // Position Label
+            JLabel positionLabel = new JLabel("Pos: " + agent.getPose().getPosition(), SwingConstants.CENTER);
+            positionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // Create HP bar
+            JProgressBar hpBar = new JProgressBar(0, agent.getMaxHp()); // Max HP as upper bound
+            hpBar.setValue(agent.getHp()); // Current HP
+            hpBar.setStringPainted(true); // Show HP value as text
+            hpBar.setForeground(agent.getHp() > (agent.getMaxHp() / 2) ? Color.GREEN : Color.RED); // Green if HP > 50%, red otherwise
+            hpBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // Create a label for the agent's state
+            JLabel stateLabel = new JLabel("State: " + agent.getState(), SwingConstants.CENTER);
+            stateLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
             // Set agent icon
             ImageIcon agentIcon = getAgentIcon(agent);
+            JLabel iconLabel = new JLabel();
             if (agentIcon != null) {
-                agentLabel.setIcon(agentIcon);
-                agentLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-                agentLabel.setVerticalTextPosition(SwingConstants.BOTTOM);
+                iconLabel.setIcon(agentIcon);
+                iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
             }
+            iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            // Add to the container
-            agentStatusContainer.add(agentLabel);
+            // Add all components to the agent panel
+            agentPanel.add(iconLabel);
+            agentPanel.add(nameLabel);
+            agentPanel.add(positionLabel);
+            agentPanel.add(hpBar);
+            agentPanel.add(stateLabel);
+
+            // Add agent panel to the appropriate team row
+            if (agent.getTeam()) { // Red team
+                redTeamRow.add(agentPanel);
+            } else { // Blue team
+                blueTeamRow.add(agentPanel);
+            }
         }
+
+        // Add the two team rows to the main container
+        agentStatusContainer.setLayout(new BoxLayout(agentStatusContainer, BoxLayout.Y_AXIS));
+        agentStatusContainer.add(new JLabel("Blue Team:"));
+        agentStatusContainer.add(blueTeamRow);
+        agentStatusContainer.add(new JLabel("Red Team:"));
+        agentStatusContainer.add(redTeamRow);
 
         agentStatusContainer.revalidate();
         agentStatusContainer.repaint();
     }
-
 
     // Custom renderer for agent statuses
     private class AgentStatusRenderer extends DefaultListCellRenderer {
@@ -487,7 +527,10 @@ public class BlackForestView extends JFrame implements MapView {
     }
 
     // Refresh the view to display sprites based on zone types, structures, and agents
+// Refresh the view to display sprites based on zone types, structures, and agents
     private void refreshBackground() {
+        Map<Vector2D, String> entitiesNamesToRender = new HashMap<>();
+
         for (int y = 0; y < model.getHeight(); y++) {
             for (int x = 0; x < model.getWidth(); x++) {
                 Vector2D position = Vector2D.of(x, y);
@@ -516,6 +559,14 @@ public class BlackForestView extends JFrame implements MapView {
                         if (structureIcon != null) {
                             combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, structureIcon.getImage()));
                         }
+
+                        if ((structure instanceof Gate)) {
+                            // Store the agent's name for the cell above (y-1)
+                            Vector2D namePosition = Vector2D.of(x, y - 1);
+                            if (y > 0) { // Ensure it's within bounds
+                                entitiesNamesToRender.put(namePosition, structure.getName());
+                            }
+                        }
                     }
 
                     Resource resource = cell.getResource();
@@ -532,6 +583,14 @@ public class BlackForestView extends JFrame implements MapView {
                                 combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, resourceIcon.getImage()));
                             }
                         }
+
+                        if ((resource instanceof Princess)) {
+                            // Store the agent's name for the cell above (y-1)
+                            Vector2D namePosition = Vector2D.of(x, y - 1);
+                            if (y > 0) { // Ensure it's within bounds
+                                entitiesNamesToRender.put(namePosition, resource.getName());
+                            }
+                        }
                     }
 
                     Agent agent = cell.getAgent();
@@ -540,6 +599,12 @@ public class BlackForestView extends JFrame implements MapView {
                         if (agentIcon != null) {
                             combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, agentIcon.getImage()));
                         }
+
+                        // Store the agent's name for the cell above (y-1)
+                        Vector2D namePosition = Vector2D.of(x, y - 1);
+                        if (y > 0) { // Ensure it's within bounds
+                            entitiesNamesToRender.put(namePosition, agent.getName());
+                        }
                     }
 
                     // Set the final combined image
@@ -547,9 +612,43 @@ public class BlackForestView extends JFrame implements MapView {
                 }
             }
         }
+
+        // Overlay agent names on cells above
+        for (Map.Entry<Vector2D, String> entry : entitiesNamesToRender.entrySet()) {
+            JLabel nameLabel = cellsGrid.get(entry.getKey());
+            if (nameLabel != null) {
+                ImageIcon textImage = new ImageIcon(createImageWithText(entry.getValue()));
+                nameLabel.setIcon(new ImageIcon(createImageWithTransparency((ImageIcon) nameLabel.getIcon(), textImage.getImage())));
+            }
+        }
+
         repaint();
     }
 
+    private Image createImageWithText(String agentName) {
+        int width = 50, height = 20; // Size of the text box
+        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = bufferedImage.createGraphics();
+
+        // Draw background rectangle (kept semi-transparent for readability)
+        g2d.setColor(new Color(50, 50, 50, 180)); // Dark semi-transparent box
+        g2d.fillRoundRect(0, 5, width, height, 5, 5);
+
+        // Convert agent name to the desired format: first letter of the first word and last part of the string
+        String[] parts = agentName.split("_");
+        String formattedName = parts[0].substring(0, 1).toUpperCase() + "_" + parts[1].toUpperCase();
+
+        // Draw text inside the box
+        g2d.setFont(new Font("Arial", Font.BOLD, 10));
+        g2d.setColor(Color.WHITE);
+        FontMetrics metrics = g2d.getFontMetrics();
+        int textX = 2;
+        int textY = (height - metrics.getHeight()) / 2 + metrics.getAscent() + 3;
+        g2d.drawString(formattedName, textX, textY);
+
+        g2d.dispose();
+        return bufferedImage;
+    }
 
     // Get the appropriate structure icon
     private ImageIcon getStructureIcon(MapStructure structure) {
@@ -586,10 +685,12 @@ public class BlackForestView extends JFrame implements MapView {
         int frame = agentAnimationFrames.getOrDefault(agent, 0);
         ImageIcon baseIcon = sprites.get(frame % sprites.size());
 
-        if (agent.getCarriedItem() != null) {
-            return new ImageIcon(createImageWithTransparency(baseIcon, crownIcon.getImage()));
-        }
-        return baseIcon;
+        // If the agent is carrying an item, add overlay
+        Image finalImage = (agent.getCarriedItem() != null)
+                ? createImageWithTransparency(baseIcon, crownIcon.getImage()) // Apply overlay
+                : baseIcon.getImage();
+
+        return new ImageIcon(finalImage);
     }
 
 
@@ -613,6 +714,7 @@ public class BlackForestView extends JFrame implements MapView {
         g2d.dispose();
         return bufferedImage;
     }
+
     private void updateAnimationFrames() {
         for (Agent agent : model.getAllAgents()) {
             int currentFrame = agentAnimationFrames.getOrDefault(agent, 0);

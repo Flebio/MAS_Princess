@@ -50,17 +50,17 @@ public class GameMap {
         return height;
     }
 
-    public AtomicInteger getWoodAmountRed() {
+    public synchronized AtomicInteger getWoodAmountRed() {
         return this.woodAmountRed;
     }
 
-    public AtomicInteger getWoodAmountBlue() {
+    public synchronized AtomicInteger getWoodAmountBlue() {
         return this.woodAmountBlue;
     }
 
-    public boolean isEnoughWoodRed() { return (this.getWoodAmountRed().get() > this.enoughWoodAmount); }
+    public synchronized boolean isEnoughWoodRed() { return (this.getWoodAmountRed().get() >= this.enoughWoodAmount); }
 
-    public boolean isEnoughWoodBlue() { return (this.getWoodAmountBlue().get() > this.enoughWoodAmount); }
+    public synchronized boolean isEnoughWoodBlue() { return (this.getWoodAmountBlue().get() >= this.enoughWoodAmount); }
 
     public boolean isPositionInside(int x, int y) {
         return ((x >= 0 && x < this.width && y >= 0 && y < this.height));
@@ -315,7 +315,8 @@ public class GameMap {
 
     private void addTrees() {
         // Number of trees to spawn
-        int treeCount = (this.width * this.height) / 33;
+//        int treeCount = (this.width * this.height) / 33;
+        int treeCount = (this.width * this.height) / 15;
 
         // Define spawn area dimensions
         int northSpawnAreaWidth = this.getWidth() / 2 - 1;
@@ -416,7 +417,7 @@ public class GameMap {
 
         randomCell.setResource(princess);
         resourcesList.put(princess.getName(), princess);
-        System.out.println("Princess spawned at: " + randomCell.getX() + ", " + randomCell.getY());
+        //System.out.println("Princess spawned at: " + randomCell.getX() + ", " + randomCell.getY());
     }
 
     public void printAgentList(Logger logger) {
@@ -449,7 +450,7 @@ public class GameMap {
         }
     }
 
-    public Cell getCellByPosition(int x, int y) {
+    public synchronized Cell getCellByPosition(int x, int y) {
         mapLock.readLock().lock();
         try {
             if (!this.isPositionInside(x, y)) {
@@ -461,7 +462,7 @@ public class GameMap {
         }
     }
 
-    public Cell getCellByPosition(Vector2D position) {
+    public synchronized Cell getCellByPosition(Vector2D position) {
         return this.getCellByPosition(position.getX(), position.getY());
     }
 
@@ -478,7 +479,7 @@ public class GameMap {
      * @param includeMatching    If true, returns cells matching the criteria; if false, returns the complement.
      * @return List of cells filtered by the specified criteria in raster order.
      */
-    public List<Cell> getAllCells(
+    public synchronized List<Cell> getAllCells(
             Zone zoneType,
             Class<? extends MapStructure> structureClass, Predicate<MapStructure> structurePredicate,
             Class<? extends Resource> resourceClass, Predicate<Resource> resourcePredicate,
@@ -518,7 +519,7 @@ public class GameMap {
     }
 
     // AGENTS MANAGEMENT
-    public void setAgentPosition(Agent agent, Vector2D position) {
+    public synchronized void setAgentPosition(Agent agent, Vector2D position) {
         synchronized (this.agentsList) {
             Pose currentPose = this.agentsList.get(agent.getName()).getPose();
             agent.setPose(new Pose(position, currentPose.getOrientation()));
@@ -526,7 +527,7 @@ public class GameMap {
         }
     }
 
-    public void setAgentDirection(Agent agent, Orientation orientation) {
+    public synchronized void setAgentDirection(Agent agent, Orientation orientation) {
         synchronized (this.agentsList) {
             Pose currentPose = this.agentsList.get(agent.getName()).getPose();
             agent.setPose(new Pose(currentPose.getPosition(), orientation));
@@ -534,7 +535,7 @@ public class GameMap {
         }
     }
 
-    public boolean setAgentPose(Agent agent, int x, int y, Orientation orientation) {
+    public synchronized boolean setAgentPose(Agent agent, int x, int y, Orientation orientation) {
         synchronized (this.agentsList) {
 
             if (this.containsAgent(agent)) { //UPDATE
@@ -566,64 +567,59 @@ public class GameMap {
         }
     }
 
-    private boolean setAgentPose(Agent agent, Vector2D afterStep, Orientation newOrientation) {
+    private synchronized boolean setAgentPose(Agent agent, Vector2D afterStep, Orientation newOrientation) {
         return this.setAgentPose(agent, afterStep.getX(), afterStep.getY(), newOrientation);
     }
 
-    public boolean spawnAgent(Agent agent) {
-        // Get all unoccupied cells in the team's base zone with their positions
-        List<Cell> availableCells = getAllCells(
-                (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE,
-                null, null,
-                null, null,
-                null, null,
-                true
-        );
-
-
-        if (availableCells.isEmpty()) {
-            return false; // No available cells in the base
-        }
-
-        // Select a random cell from the available cells
-        Cell randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
-        while (randomCellPosition.isOccupied(agent, null)) {
-            randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
-        }
-        Orientation randomOrientation = Orientation.random();
-
-        return setAgentPose(agent, randomCellPosition.getX(), randomCellPosition.getY(), randomOrientation);
-    }
-
-    public boolean respawnAgent(Agent agent) {
-
-        // Synchronize access to agentsList
-//        synchronized (agentsList) {
-//            // Remove the agent from the agentsList
-//            agentsList.remove(agent.getName());
-//        }
-
+    public synchronized boolean spawnAgent(Agent agent) {
         mapLock.writeLock().lock();
+        boolean result;
         try {
-            Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
-            if (agentCell != null) {
-                if (agentCell.getAgent().getCarriedItem() != null) {
-                    agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
+            // If the agent's HP is 0 or less, perform respawn logic
+            if (agent.getHp() <= 0) {
+
+                Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
+                if (agentCell != null) {
+                    if (agentCell.getAgent().getCarriedItem() != null) {
+                        agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
+                    }
+                    agentCell.clearAgent();
                 }
-                //view.triggerDeathView(agentCell.getPosition());
-                agentCell.clearAgent();
+
+
+                agent.setHp(agent.getMaxHp());
+                agent.setState("spawn");
             }
+
+            // Get all unoccupied cells in the team's base zone with their positions
+            List<Cell> availableCells = getAllCells(
+                    (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE,
+                    null, null,
+                    null, null,
+                    null, null,
+                    true
+            );
+
+            if (availableCells.isEmpty()) {
+                return false; // No available cells in the base
+            }
+
+            // Select a random cell from the available cells
+            Cell randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
+            while (randomCellPosition.isOccupied(agent, null)) {
+                randomCellPosition = availableCells.get(RAND.nextInt(availableCells.size()));
+            }
+            Orientation randomOrientation = Orientation.random();
+
+            result = setAgentPose(agent, randomCellPosition.getX(), randomCellPosition.getY(), randomOrientation);
+
         } finally {
             mapLock.writeLock().unlock();
         }
-
-        agent.setHp(agent.getMaxHp());
-        agent.setState("spawn");
-        spawnAgent(agent);
-        return true;
+        return result;
     }
 
-    public boolean moveAgent(Agent agent, Vector2D newPosition, Orientation newOrientation) {
+    public synchronized boolean moveAgent(Agent agent, Vector2D newPosition, Orientation newOrientation) {
         mapLock.writeLock().lock();
         try {
             if (!isPositionInside(newPosition.getX(), newPosition.getY())) {
@@ -632,8 +628,8 @@ public class GameMap {
 
             Pose currentPose = agentsList.get(agent.getName()).getPose();
 
-            Cell currentCell = map[currentPose.getPosition().getX()][currentPose.getPosition().getY()];
-            Cell targetCell = map[newPosition.getX()][newPosition.getY()];
+            Cell currentCell = this.getCellByPosition(currentPose.getPosition().getX(), currentPose.getPosition().getY());
+            Cell targetCell = this.getCellByPosition(newPosition.getX(), newPosition.getY());
 
             if (targetCell.getZoneType() == Zone.OUT_OF_MAP) {
                 return false;
@@ -652,10 +648,14 @@ public class GameMap {
                     targetCell.setAgent(agent);
 
                     if (agent.getCarriedItem() != null) {
-                        agent.getCarriedItem().setPose(new Pose(agent.getPose().getPosition(), Orientation.SOUTH));
-                        this.resourcesList.put(agent.getCarriedItem().getName(), agent.getCarriedItem());
-                        currentCell.setResource(null);
-                        targetCell.setResource(agent.getCarriedItem());
+                        synchronized (this.resourcesList) {
+
+                            agent.getCarriedItem().setPose(new Pose(agent.getPose().getPosition(), Orientation.SOUTH));
+                            this.resourcesList.put(agent.getCarriedItem().getName(), agent.getCarriedItem());
+                            currentCell.setResource(null);
+                            targetCell.setResource(agent.getCarriedItem());
+
+                        }
                     }
 
 //                    if ((targetCell.getZoneType() == Zone.BBASE && agent.getTeam() == false) || (targetCell.getZoneType() == Zone.RBASE && agent.getTeam() == true)) {
@@ -675,7 +675,7 @@ public class GameMap {
         }
     }
 
-    public boolean moveAgent(Agent agent, Vector2D newPosition, Direction direction) {
+    public synchronized boolean moveAgent(Agent agent, Vector2D newPosition, Direction direction) {
         Pose currentPose = this.agentsList.get(agent.getName()).getPose();
         Orientation newOrientation = currentPose.getOrientation().rotate(direction);
 
@@ -683,7 +683,7 @@ public class GameMap {
         return moveAgent(agent, newPosition, newOrientation);
     }
 
-    public boolean moveAgent(Agent agent, int stepSize, Direction direction) {
+    public synchronized boolean moveAgent(Agent agent, int stepSize, Direction direction) {
         Pose currentPose = this.agentsList.get(agent.getName()).getPose();
         Orientation newOrientation = currentPose.getOrientation().rotate(direction);
 
@@ -691,8 +691,8 @@ public class GameMap {
         return moveAgent(agent, currentPose.getPosition().afterStep(stepSize, newOrientation), newOrientation);
     }
 
-    public boolean attackAgent(Agent attacking_agent, Agent target) {
-        synchronized (target) {
+    public synchronized boolean attackAgent(Agent attacking_agent, Agent target) {
+        synchronized (this.agentsList) {
             view.triggerAttackView(attacking_agent.getPose().getPosition());
             view.triggerDamageView(target.getPose().getPosition());
             int newHp = target.getHp() - attacking_agent.getAttackPower();
@@ -705,8 +705,8 @@ public class GameMap {
         return true;
     }
 
-    public boolean attackGate(Agent attacking_agent, Gate target) {
-        synchronized (target) {
+    public synchronized boolean attackGate(Agent attacking_agent, Gate target) {
+        synchronized (this.structuresList) {
             view.triggerAttackView(attacking_agent.getPose().getPosition());
             view.triggerDamageView(target.getPose().getPosition());
             target.takeDamage(attacking_agent.getAttackPower());
@@ -714,13 +714,13 @@ public class GameMap {
         return true;
     }
 
-    public boolean repairGate(Agent repairing_agent, Gate target) {
-        synchronized (target) {
+    public synchronized boolean repairGate(Agent repairing_agent, Gate target) {
+        synchronized (this.structuresList) {
             synchronized (this.getWoodAmountBlue()) {
                 synchronized (this.getWoodAmountRed()) {
                     boolean isBlueTeam = !repairing_agent.getTeam();
                     boolean isRedTeam = repairing_agent.getTeam();
-                    if ((isBlueTeam && this.getWoodAmountBlue().get() > this.enoughWoodAmount) || (isRedTeam && this.getWoodAmountRed().get() > this.enoughWoodAmount)) {
+                    if ((isBlueTeam && this.getWoodAmountBlue().get() >= this.enoughWoodAmount) || (isRedTeam && this.getWoodAmountRed().get() >= this.enoughWoodAmount)) {
                         target.repair();
                         if (isBlueTeam) {
                             this.woodAmountBlue.addAndGet(-this.enoughWoodAmount);
@@ -742,7 +742,7 @@ public class GameMap {
             woodAmountRed.incrementAndGet();
         }
     }
-    public boolean attackTree(Agent attacking_agent, Tree target) {
+    public synchronized boolean attackTree(Agent attacking_agent, Tree target) {
         synchronized (target) {
             view.triggerAttackView(attacking_agent.getPose().getPosition());
             view.triggerDamageView(target.getPose().getPosition());
@@ -754,7 +754,7 @@ public class GameMap {
         return true;
     }
 
-    private Pair<String, Vector2D> findClosestResource(Agent agent, Class<? extends Resource> resourceClass, Predicate<Resource> filter, String stateName) {
+    private synchronized Pair<String, Vector2D> findClosestResource(Agent agent, Class<? extends Resource> resourceClass, Predicate<Resource> filter, String stateName) {
         List<Cell> resources = getAllCells(
                 null,
                 null, null,
@@ -779,7 +779,7 @@ public class GameMap {
         return closestPosition != null ? new Pair<>(stateName, closestPosition) : null;
     }
 
-    private Pair<String, Vector2D> findClosestStructure(Agent agent, Class<? extends MapStructure> structureClass, Predicate<MapStructure> filter, String stateName) {
+    private synchronized Pair<String, Vector2D> findClosestStructure(Agent agent, Class<? extends MapStructure> structureClass, Predicate<MapStructure> filter, String stateName) {
         Predicate<MapStructure> combinedFilter = structure -> {
             if (structure instanceof Tree tree) {
                 return !tree.isDestroyed() && (filter == null || filter.test(structure));
@@ -816,18 +816,33 @@ public class GameMap {
         );
     }
 
-    private Pair<String, Vector2D> fallbackPlan(Agent agent) {
+    private synchronized Pair<String, Vector2D> fallbackPlan(Agent agent) {
         Vector2D agent_position = agent.getPose().getPosition();
-        if (agent_position.getX() > this.getWidth() / 2) {
-            return new Pair<>("choose_path_back", agent_position);
+        boolean isTeamBlue = !agent.getTeam();
+        boolean isTeamRed = agent.getTeam();
+
+        if ((isTeamBlue && getCellByPosition(agent_position).getZoneType() == Zone.RBASE) ||
+                (isTeamRed && getCellByPosition(agent_position).getZoneType() == Zone.BBASE)) {
+            return findClosestStructure(agent, Empty.class,
+                    empty -> ((Empty) empty).getType() == "base", "choose_path_back");
+//            return new Pair<>("exit_from_enemy_base", agent_position);
+        } else if (agent_position.getX() > this.getWidth() / 2) {
+            if (RAND.nextDouble() < .5) {
+                return new Pair("towards_land_passage_back", agent.getPose().getPosition());
+            } else {
+                return new Pair("towards_bridge_back", agent.getPose().getPosition());
+            }
+//            return new Pair<>("choose_path_back", agent_position);
         } else if (agent_position.getX() <= this.getWidth() / 2) {
-            return new Pair<>("fallback_to_base", agent_position);
+            return findClosestStructure(agent, Empty.class,
+                    empty -> ((Empty) empty).getType() == "base", "back_to_base");
+//            return new Pair<>("fallback_to_base", agent_position);
         }
 
         return null;
     }
 
-    private Pair<String, Vector2D> handlePrincessScenarios(Agent agent) {
+    private synchronized Pair<String, Vector2D> handlePrincessScenarios(Agent agent) {
         Optional<Princess> princessB = this.getPrincessByName("princess_b");
         Optional<Princess> princessR = this.getPrincessByName("princess_r");
 
@@ -836,6 +851,11 @@ public class GameMap {
             boolean isRedCarried = princessR.get().isCarried();
             boolean isTeamBlue = !agent.getTeam();
             boolean isTeamRed = agent.getTeam();
+
+            if ((isBlueCarried && isTeamBlue && getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.RBASE) ||
+                    (isRedCarried && isTeamRed && getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.BBASE)) {
+                return fallbackPlan(agent);
+            }
 
             if ((isBlueCarried && isTeamBlue) || (isRedCarried && isTeamRed)) {
                 return findClosestResource(agent, Princess.class,
@@ -851,7 +871,7 @@ public class GameMap {
         return null;
     }
 
-    private Pair<String, Vector2D> handleGatesScenarios(Agent agent) {
+    private synchronized Pair<String, Vector2D> handleGatesScenarios(Agent agent) {
         Optional<Gate> gate_b1 = this.getGateByName("gate_b1");
         Optional<Gate> gate_b2 = this.getGateByName("gate_b2");
         Optional<Gate> gate_r1 = this.getGateByName("gate_r1");
@@ -868,47 +888,49 @@ public class GameMap {
             synchronized (this.getWoodAmountBlue()) {
                 synchronized (this.getWoodAmountRed()) {
                     if (isGateB1Destroyed && isTeamBlue) {
-                        if (this.getWoodAmountBlue().get() > this.enoughWoodAmount) {
+                        if (this.getWoodAmountBlue().get() >= this.enoughWoodAmount) {
                             Vector2D gate_b1_pos = gate_b1.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_b1_pos.getX() + 1, gate_b1_pos.getY()));
-                        } else {
-                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
-                            //return new Pair<>("gather_wood", agent.getPose().getPosition());
                         }
+//                        } else {
+//                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
+//                            //return new Pair<>("gather_wood", agent.getPose().getPosition());
+//                        }
                     } else if (isGateB2Destroyed && isTeamBlue) {
-                        if (this.getWoodAmountBlue().get() > this.enoughWoodAmount) {
+                        if (this.getWoodAmountBlue().get() >= this.enoughWoodAmount) {
                             Vector2D gate_b2_pos = gate_b2.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_b2_pos.getX() + 1, gate_b2_pos.getY()));
-                        } else {
-                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
-                            //return new Pair<>("gather_wood", agent.getPose().getPosition());
                         }
+//                        } else {
+//                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
+//                            //return new Pair<>("gather_wood", agent.getPose().getPosition());
+//                        }
                     } else if (isGateR1Destroyed && isTeamRed) {
-                        if (this.getWoodAmountRed().get() > this.enoughWoodAmount) {
+                        if (this.getWoodAmountRed().get() >= this.enoughWoodAmount) {
                             Vector2D gate_r1_pos = gate_r1.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_r1_pos.getX() - 1, gate_r1_pos.getY()));
-                        } else {
-                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
-//                            return new Pair<>("gather_wood", agent.getPose().getPosition());
                         }
+//                        } else {
+//                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
+////                            return new Pair<>("gather_wood", agent.getPose().getPosition());
+//                        }
                     } else if (isGateR2Destroyed && isTeamRed) {
-                        if (this.getWoodAmountBlue().get() > this.enoughWoodAmount) {
+                        if (this.getWoodAmountBlue().get() >= this.enoughWoodAmount) {
                             Vector2D gate_r2_pos = gate_r2.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_r2_pos.getX() - 1, gate_r2_pos.getY()));
-                        } else {
-                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
-//                            return new Pair<>("gather_wood", agent.getPose().getPosition());
                         }
+//                        } else {
+//                            return findClosestStructure(agent, Tree.class, null, "tree_reached");
+//                        }
                     }
                 }
-
             }
         }
 
         return null;
     }
 
-    public Pair<String, Vector2D> getClosestObjectiveSoldier(Agent agent) {
+    public synchronized Pair<String, Vector2D> getClosestObjectiveSoldier(Agent agent) {
 
         if (this.win != null) {
             if (agent.getTeam() == this.win) {
@@ -1033,7 +1055,7 @@ public class GameMap {
         }
     }
 
-    public Pair<String, Vector2D> getClosestObjectiveGatherer(Agent agent) {
+    public synchronized Pair<String, Vector2D> getClosestObjectiveGatherer(Agent agent) {
 
         if (this.win != null) {
             if (agent.getTeam() == this.win) {
@@ -1054,7 +1076,7 @@ public class GameMap {
         }
 
         switch (agent.getState()) {
-            case "spawn":
+            case "spawn", "repairing_gate":
                 return findClosestStructure(agent, Gate.class,
                         gate -> ((Gate) gate).getTeam() == agent.getTeam(), "exit_from_ally_base");
 
@@ -1063,23 +1085,22 @@ public class GameMap {
                         empty -> ((Empty) empty).getType() == "base", "gather_wood");
 
             case "gather_wood":
-                return findClosestStructure(agent, Tree.class, null, "tree_reached");
-
-            case "tree_reached":
                 synchronized (this.getWoodAmountBlue()) {
                     synchronized (this.getWoodAmountRed()) { // Maybe check if the princess is carried?
                         if (!agent.getTeam() && this.getWoodAmountBlue().get() >= (this.enoughWoodAmount * 2)) { // If agent is blue and there is enough wood
                             return new Pair("choose_path", agent.getPose().getPosition());
                         } else if (agent.getTeam() && this.getWoodAmountRed().get() >= (this.enoughWoodAmount * 2)) { // Else if agent is red and there is enough wood
                             return new Pair("choose_path", agent.getPose().getPosition());
-                        } else {
-                            return new Pair("gather_wood", agent.getPose().getPosition());
                         }
                     }
                 }
+                return findClosestStructure(agent, Tree.class, null, "tree_reached");
+
+            case "tree_reached":
+                return new Pair("gather_wood", agent.getPose().getPosition());
 
             case "repair_destroyed_gate":
-                return new Pair("exit_from_ally_base", agent.getPose().getPosition());
+                return new Pair("gather_wood", agent.getPose().getPosition());
 
             case "choose_path":
                 if (RAND.nextDouble() < agent.getLandProbability()) {
@@ -1191,7 +1212,7 @@ public class GameMap {
         return null; // Return null if the agent type is not recognized
     }
 
-    public boolean containsAgent(Agent agent) {
+    public synchronized boolean containsAgent(Agent agent) {
         synchronized (this.agentsList) {
             return this.agentsList.containsKey(agent.getName());
         }
@@ -1203,21 +1224,21 @@ public class GameMap {
         }
     }
 
-    public Vector2D getAgentPosition(Agent agent) {
+    public synchronized Vector2D getAgentPosition(Agent agent) {
         synchronized (this.agentsList) {
             this.ensureAgentExists(agent);
             return this.agentsList.get(agent.getName()).getPose().getPosition();
         }
     }
 
-    public Orientation getAgentDirection(Agent agent) {
+    public synchronized Orientation getAgentDirection(Agent agent) {
         synchronized (this.agentsList) {
             this.ensureAgentExists(agent);
             return this.agentsList.get(agent.getName()).getPose().getOrientation();
         }
     }
 
-    public Optional<Agent> getAgentByPosition(Vector2D position) {
+    public synchronized Optional<Agent> getAgentByPosition(Vector2D position) {
         synchronized (this.agentsList) {
             return this.agentsList.values().stream()
                     .filter(agent -> agent.getPose().getPosition().equals(position))
@@ -1225,7 +1246,7 @@ public class GameMap {
         }
     }
 
-    public Optional<Agent> getAgentByName(String agName) {
+    public synchronized Optional<Agent> getAgentByName(String agName) {
         synchronized (this.agentsList) {
             return this.agentsList.values().stream()
                     .filter(entry -> agName.equals(entry.getName()))
@@ -1256,7 +1277,7 @@ public class GameMap {
                 .collect(Collectors.toSet());
     }
 
-    public Set<Agent> getAllAgents() {
+    public synchronized Set<Agent> getAllAgents() {
         synchronized (this.agentsList) {
             return this.agentsList.values()
                     .stream()
@@ -1264,7 +1285,7 @@ public class GameMap {
         }
     }
 
-    public boolean containsStructure(MapStructure structure) {
+    public synchronized boolean containsStructure(MapStructure structure) {
         synchronized (this.structuresList) {
             return this.structuresList.containsKey(structure.getName());
         }
@@ -1285,7 +1306,7 @@ public class GameMap {
         return neighbourhoodFunction.apply(agentPosition, neighbourPosition);
     }
 
-    public Optional<Gate> getGateByName(String gName) {
+    public synchronized Optional<Gate> getGateByName(String gName) {
         synchronized (this.structuresList) {
             return this.getAllStructures(Gate.class).stream()
                     .filter(entry -> gName.equals(entry.getName()))
@@ -1294,7 +1315,7 @@ public class GameMap {
         }
     }
 
-    public Optional<Tree> getTreeByName(String tName) {
+    public synchronized Optional<Tree> getTreeByName(String tName) {
         synchronized (this.structuresList) {
             return this.getAllStructures(Tree.class).stream()
                     .filter(entry -> tName.equals(entry.getName()))
@@ -1304,6 +1325,11 @@ public class GameMap {
     }
 
     public Set<Gate> getGateNeighbours(Agent agent, String team, int range) {
+        boolean isBlueTeam = !agent.getTeam();
+        boolean isRedTeam = agent.getTeam();
+
+
+
         if (team.equals("enemy")) {
             //System.out.println(this.getAllStructures(Gate.class));
             return this.getAllStructures(Gate.class).stream()
@@ -1311,14 +1337,13 @@ public class GameMap {
                     .filter(gate -> this.isStructureInRange(agent, gate, range)) // Within range
                     .map(gate -> (Gate) gate) // Cast to Gate
                     .collect(Collectors.toSet());
-        } else if (team.equals("ally")) {
+        } else if (team.equals("ally") & (((isBlueTeam & this.isEnoughWoodBlue()) || (isRedTeam & this.isEnoughWoodRed())))) {
             return this.getAllStructures(Gate.class).stream()
                     .filter(gate -> gate.getTeam().equals(agent.getTeam())) // Only ally gates
                     .filter(gate -> this.isStructureInRange(agent, gate, range)) // Within range
                     .map(gate -> (Gate) gate) // Cast to Gate
                     .collect(Collectors.toSet());
         }
-
         return this.getAllStructures(Gate.class).stream()
                 .filter(gate -> this.isStructureInRange(agent, gate, range)) // Within range
                 .map(gate -> (Gate) gate) // Cast to Gate
@@ -1326,13 +1351,46 @@ public class GameMap {
     }
 
     public Set<Tree> getTreeNeighbours(Agent agent, int range) {
-        return this.getAllStructures(Tree.class).stream() // Use Tree.class instead of Tree
+
+        boolean isBlueTeam = !agent.getTeam();
+        boolean isRedTeam = agent.getTeam();
+
+        boolean blueGateDestroyed = this.getGateByName("gate_b1").get().isDestroyed() ||
+                this.getGateByName("gate_b2").get().isDestroyed();
+        boolean redGateDestroyed = this.getGateByName("gate_r1").get().isDestroyed() ||
+                this.getGateByName("gate_r2").get().isDestroyed();
+        boolean destroyedGate = blueGateDestroyed || redGateDestroyed;
+
+        boolean bluePrincessCarried = this.getPrincessByName("princess_b").get().isCarried();
+        boolean redPrincessCarried = this.getPrincessByName("princess_r").get().isCarried();
+        boolean princessCarried = bluePrincessCarried || redPrincessCarried;
+
+        // If a gate is destroyed and there are enough wood resources to fix it, avoid trees
+        if ((isBlueTeam && this.isEnoughWoodBlue() && blueGateDestroyed) ||
+                (isRedTeam && this.isEnoughWoodRed() && redGateDestroyed)) {
+            return Collections.emptySet();
+        }
+
+        // If a princess is being carried, avoid trees
+        if (princessCarried) {
+            return Collections.emptySet();
+        }
+
+        // If no gate is destroyed but there are twice as many wood resources as needed, avoid trees
+        if ((isBlueTeam && this.getWoodAmountBlue().get() >= 2 * this.enoughWoodAmount) ||
+                (isRedTeam && this.getWoodAmountRed().get() >= 2 * this.enoughWoodAmount)) {
+            return Collections.emptySet();
+        }
+
+        // In all other cases, return neighbor trees
+        return this.getAllStructures(Tree.class).stream()
                 .filter(tree -> this.isStructureInRange(agent, tree, range))
                 .map(tree -> (Tree) tree) // Cast to Tree
                 .collect(Collectors.toSet());
     }
 
-    public Set<MapStructure> getAllStructures(Class<? extends MapStructure> structureClass) {
+
+    public synchronized Set<MapStructure> getAllStructures(Class<? extends MapStructure> structureClass) {
         synchronized (this.structuresList) {
             //System.out.println(this.structuresList.values());
             return this.structuresList.values()
@@ -1342,7 +1400,7 @@ public class GameMap {
         }
     }
 
-    public Set<Resource> getAllResources(Class<? extends Resource> resourceClass) {
+    public synchronized Set<Resource> getAllResources(Class<? extends Resource> resourceClass) {
         synchronized (this.resourcesList) {
             //System.out.println(this.resourcesList.values());
             return this.resourcesList.values()
@@ -1352,7 +1410,7 @@ public class GameMap {
         }
     }
 
-    public Optional<Princess> getPrincessByName(String pName) {
+    public synchronized Optional<Princess> getPrincessByName(String pName) {
         synchronized (this.resourcesList) {
             return this.getAllResources(Princess.class).stream()
                     .filter(entry -> pName.equals(entry.getName()))
@@ -1399,13 +1457,13 @@ public class GameMap {
         return neighbourhoodFunction.apply(agentPosition, neighbourPosition);
     }
 
-    public boolean containsResource(Resource resource) {
+    public synchronized boolean containsResource(Resource resource) {
         synchronized (this.resourcesList) {
             return this.resourcesList.containsKey(resource.getName());
         }
     }
 
-    public boolean pickUpPrincess(Agent agent, Princess target) {
+    public synchronized boolean pickUpPrincess(Agent agent, Princess target) {
         mapLock.writeLock().lock();
         try {
             Vector2D p_pos = target.getPose().getPosition();

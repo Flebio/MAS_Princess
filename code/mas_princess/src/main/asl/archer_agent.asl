@@ -15,7 +15,6 @@ p2(0.0).
 
 -!spawn
     <-
-        .wait(5000).
         !savePrincess.
 
 
@@ -50,7 +49,7 @@ p2(0.0).
         .drop_all_desires;
         .drop_all_events;
         .print("Dead. Respawning...");
-        respawn(true);
+        //respawn(true);
         !spawn.
 
 -?check_hp(HP)
@@ -254,7 +253,7 @@ This way, if we have already reached a correct axis (either H or I), the agent o
 
         !savePrincess.
 
--!move_towards_objective
+-!move_towards_objective: position(K, J) & objective_position(H, I)
     <-
-       .print("Conditions failed.");
+       //.print("Conditions failed. Position: (", K, ",", J, ") - Objective (", H, ",", I, ")");
        !savePrincess.

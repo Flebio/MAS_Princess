@@ -8,10 +8,14 @@ import jason.asSyntax.Literal;
 import jason.asSyntax.Term;
 import jason.bb.BeliefBase;
 
+import java.util.Random;
+
 /**
  * Identifies the enemy with the lowest HP and sets it as the target.
  */
 public class check_in_range extends DefaultInternalAction {
+
+    private static final Random RAND = new Random();
 
     @Override
     public Object execute(TransitionSystem ts, Unifier un, Term[] args) throws Exception {
@@ -99,8 +103,13 @@ public class check_in_range extends DefaultInternalAction {
             currentAgent.delBel(oldTarget);
         }
 
+
         // If an entity is found, set it as the target
-        if (targetedEntity != null) {
+
+        if (targetedEntity != null && percept.equals("enemy_in_range")) { // Attack to enemy might fail
+            double x = RAND.nextDouble();
+            currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
+        } else if (targetedEntity != null) {
             currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
             //System.out.println("New target set: " + targetedEntity );
         }

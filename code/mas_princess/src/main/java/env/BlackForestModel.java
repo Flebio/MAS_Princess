@@ -139,11 +139,6 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public  boolean respawnAgent(Agent agent){
-        return this.gameMap.respawnAgent(agent);
-    }
-
-    @Override
     public Set<Gate> getGateNeighbours(Agent agent, String team, int range) {
         return this.gameMap.getGateNeighbours(agent, team, range);
     }

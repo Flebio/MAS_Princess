@@ -234,9 +234,21 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
 
+        final boolean result;
+        if (agent.getHp() <= 0) {
+            System.out.println("Morino");
+            result = model.spawnAgent(agent);
+
+            notifyModelChangedToView();
+            try {
+                Thread.sleep(5000L / model.getFPS());
+            } catch (InterruptedException ignored) {
+            }
+
+            return result;
+        }
         //logger.info(ag + " does action: " + action.toString());
 
-        final boolean result;
         if (movementActions.containsValue(action)) {
             if (action.equals(movementActions.get("random"))) {
                 Direction randomDirection = Direction.random();
@@ -292,24 +304,24 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.pickUpPrincess(agent, target.get());
             notifyModelChangedToView();
-
         }else if (action.toString().contains("respawn")) {
-            result = model.respawnAgent(agent);
+            result = model.spawnAgent(agent);
+
             notifyModelChangedToView();
+            try {
+                    Thread.sleep(5000L / model.getFPS());
+            } catch (InterruptedException ignored) {
+            }
+
+            return result;
+
         } else{
             logger.warning("Unknown action: " + action);
             return false;
         }
 
-        // DA AGGIUNGERE BUILD LADDER E REPAIR GATE
-
         try {
-//            Thread.sleep(1000L / model.getFPS());
-            if (action.toString().contains("respawn")) {
-                Thread.sleep(5000L / model.getFPS());
-            } else {
-                Thread.sleep(300L / model.getFPS());
-            }
+                Thread.sleep(400L / model.getFPS());
         } catch (InterruptedException ignored) {
         }
 

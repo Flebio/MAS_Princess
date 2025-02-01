@@ -40,6 +40,6 @@ public class Tree extends BreakableStructure {
     private void respawn() {
         setHp(getMaxHp());
         setWalkable(false);
-        System.out.println(getName() + " has respawned!");
+        //System.out.println(getName() + " has respawned!");
     }
 }
