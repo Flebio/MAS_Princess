@@ -128,8 +128,10 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         personalBeliefs.add(Literal.parseLiteral(String.format("objective(%s)", closest_objective.getFirst())));
         personalBeliefs.add(Literal.parseLiteral(String.format("objective_position(%d,%d)", closest_objective.getSecond().getX(), closest_objective.getSecond().getY())));
 
-        if ( (closest_objective.getFirst().equals("my_team_lost")) || (closest_objective.getFirst().equals("my_team_won"))) {
-            personalBeliefs.add(Literal.parseLiteral("state(end)"));
+        if (closest_objective.getFirst().equals("my_team_lost")) {
+            personalBeliefs.add(Literal.parseLiteral("state(win)"));
+        } else if (closest_objective.getFirst().equals("my_team_won")) {
+            personalBeliefs.add(Literal.parseLiteral("state(lost)"));
         } else {
             personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
         }
@@ -236,7 +238,6 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         final boolean result;
         if (agent.getHp() <= 0) {
-            System.out.println("Morino");
             result = model.spawnAgent(agent);
 
             notifyModelChangedToView();
@@ -304,16 +305,16 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.pickUpPrincess(agent, target.get());
             notifyModelChangedToView();
-        }else if (action.toString().contains("respawn")) {
-            result = model.spawnAgent(agent);
-
-            notifyModelChangedToView();
-            try {
-                    Thread.sleep(5000L / model.getFPS());
-            } catch (InterruptedException ignored) {
-            }
-
-            return result;
+//        }else if (action.toString().contains("respawn")) {
+//            result = model.spawnAgent(agent);
+//
+//            notifyModelChangedToView();
+//            try {
+//                    Thread.sleep(5000L / model.getFPS());
+//            } catch (InterruptedException ignored) {
+//            }
+//
+//            return result;
 
         } else{
             logger.warning("Unknown action: " + action);

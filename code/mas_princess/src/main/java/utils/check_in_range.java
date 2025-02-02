@@ -77,7 +77,7 @@ public class check_in_range extends DefaultInternalAction {
                                 targetedEntity = entityName;
                             }
                     } else if (percept.equals("ally_gate_in_range")) {
-                            if (entityHp >= targetHp && entityHp < 100) {
+                            if (entityHp >= targetHp && entityHp != 100) {
                                 targetHp = entityHp;
                                 targetedEntity = entityName;
                             }
@@ -107,11 +107,16 @@ public class check_in_range extends DefaultInternalAction {
         // If an entity is found, set it as the target
 
         if (targetedEntity != null && percept.equals("enemy_in_range")) { // Attack to enemy might fail
-            double x = RAND.nextDouble();
-            currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
+            int randomValue = RAND.nextInt(100); // Generate a number between 0 and 99
+            int failPercentage = Integer.parseInt(currentAgent.findBel(Literal.parseLiteral("miss_probability(_)"), un).getTerm(0).toString());
+
+            if (randomValue < failPercentage) {
+                currentAgent.addBel(Literal.parseLiteral("target(missed)"));
+            } else {
+                currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
+            }
         } else if (targetedEntity != null) {
             currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
-            //System.out.println("New target set: " + targetedEntity );
         }
 
         // Always return true as per requirements

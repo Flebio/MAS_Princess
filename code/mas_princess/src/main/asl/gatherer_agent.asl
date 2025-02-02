@@ -1,6 +1,7 @@
 /* Warrior Agent Initialization */
 hp(60).
 att_damage(5).
+miss_probability(15).
 
 p1(0.0).
 p2(0.0).
@@ -35,14 +36,19 @@ p2(0.0).
 
 +?check_win(S)
     <-
-        ?(S == end);
+        ?(S == win | S == lost);
         .drop_all_desires;
         .drop_all_events;
-        .print("Game finished.").
+
+        if (S == win) {
+            .print("Game finished. We won.");
+        } else {
+            .print("Game finished. We lost.");
+        }.
 
 -?check_win(S)
     <-
-        .wait(1).
+        true.
 
 +?check_hp(HP)
     <-
@@ -55,7 +61,7 @@ p2(0.0).
 
 -?check_hp(HP)
     <-
-        .wait(1).
+        true.
 
 +update_hp(AD)[source(Sender)]: hp(HP)
     <-
@@ -67,14 +73,20 @@ p2(0.0).
     <-
         //.print("Checking if enemy is in range...");
         utils.check_in_range(enemy_in_range);
-        ?(target(T)); // Test goal: Checks for enemies in range
-        .send(T, tell, AttackMessage);
-        attack_enemy(T);
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
+
+        if (T \== missed) {
+            .send(T, tell, AttackMessage);
+            attack_enemy(T);
+        } else {
+            .print("Attack missed.");
+        }
+
         !savePrincess.
 
 -?enemyInRange(S, AttackMessage)
     <-
-        .wait(1).
+        true.
         //.fail.
         //.print("I got zero enemies.").
 
@@ -82,13 +94,13 @@ p2(0.0).
     <-
         //.print("Checking if gate is in range...");
         utils.check_in_range(enemy_gate_in_range);
-        ?(target(T)); // Test goal: Checks for gates in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for gates in range
         attack_gate(T);
         !savePrincess.
 
 -?enemyGateInRange(S)
     <-
-        .wait(1).
+        true.
         //.fail.
         //.print("I got zero gates.").
 
@@ -96,14 +108,14 @@ p2(0.0).
     <-
         //.print("Checking if gate is in range...");
         utils.check_in_range(ally_gate_in_range);
-        ?(target(T)); // Test goal: Checks for gates in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for gates in range
         .print("I got an ally gate.");
         repair_gate(T);
         !savePrincess.
 
 -?allyGateInRange(S)
     <-
-        .wait(1).
+        true.
         //.print("I got ally zero gates.").
         //.fail.
 
@@ -111,13 +123,13 @@ p2(0.0).
     <-
         //.print("Checking if tree is in range...");
         utils.check_in_range(tree_in_range);
-        ?(target(T)); // Test goal: Checks for trees in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for trees in range
         attack_tree(T);
         !savePrincess.
 
 -?treeInRange(S)
     <-
-        .wait(1).
+        true.
         //.fail.
         //.print("I got zero trees.").
 
@@ -126,13 +138,13 @@ p2(0.0).
     <-
         //.print("Checking if princess is in range...");
         utils.check_in_range(ally_princess_in_range);
-        ?(target(T)); // Test goal: Checks for enemies in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
         pick_up_princess(T);
         !savePrincess.
 
 -?allyPrincessInRange(S)
     <-
-        .wait(1).
+        true.
         //.fail.
         //.print("I got zero princesses.").
 
@@ -140,13 +152,13 @@ p2(0.0).
     <-
         //.print("Checking if princess is in range...");
         utils.check_in_range(enemy_princess_in_range);
-        ?(target(T)); // Test goal: Checks for enemies in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
         pick_up_princess(T);
         !savePrincess.
 
 -?enemyPrincessInRange(S)
     <-
-        .wait(1).
+        true.
         //.fail.
         //.print("I got zero princesses.").
 

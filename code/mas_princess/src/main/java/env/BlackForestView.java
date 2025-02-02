@@ -128,13 +128,12 @@ public class BlackForestView extends JFrame implements MapView {
         return panel;
     }
 
-    private JLabel woodBlueLabel;
-    private JLabel woodRedLabel;
-    private JLabel princessBlueLabel;
-    private JLabel princessRedLabel;
+    // Declare labels and HP bars for gates
+    private JLabel woodBlueLabel, woodRedLabel, princessBlueLabel, princessRedLabel;
+    private JProgressBar gateB1HpBar, gateB2HpBar, gateR1HpBar, gateR2HpBar;
 
     private JPanel createResourcePanel() {
-        int resourceWidth = 85;
+        int resourceWidth = 115;
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -156,7 +155,8 @@ public class BlackForestView extends JFrame implements MapView {
                 g2d.fillRect(0, halfHeight, getWidth(), getHeight());
             }
         };
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); // Stack elements vertically
+
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createTitledBorder("Game Infos"));
         panel.setPreferredSize(new Dimension(resourceWidth, panel.getPreferredSize().height));
         panel.setMaximumSize(new Dimension(resourceWidth, Integer.MAX_VALUE - 2));
@@ -193,30 +193,48 @@ public class BlackForestView extends JFrame implements MapView {
         princessRedLabel.setForeground(Color.RED);
 
         // Center text below icons
-        woodBlueLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        woodRedLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        princessBlueLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        princessRedLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        woodBlueLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        woodRedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        princessBlueLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        princessRedLabel.setHorizontalAlignment(SwingConstants.LEFT);
+
+        gateB1HpBar = createHpBar();
+        gateB2HpBar = createHpBar();
+        gateR1HpBar = createHpBar();
+        gateR2HpBar = createHpBar();
 
         // Add components with spacing
         panel.add(Box.createVerticalStrut(7));
-        panel.add(blueTeamLabel);
+        panel.add(createLeftAlignedPanel(blueTeamLabel));
         panel.add(Box.createVerticalStrut(7));
-        panel.add(princessBlueImage);
-        panel.add(princessBlueLabel);
+        panel.add(createLeftAlignedPanel(princessBlueImage));
+        panel.add(createLeftAlignedPanel(princessBlueLabel));
         panel.add(Box.createVerticalStrut(20));
-        panel.add(woodBlueImage);
-        panel.add(woodBlueLabel);
+        panel.add(createLeftAlignedPanel(woodBlueImage));
+        panel.add(createLeftAlignedPanel(woodBlueLabel));
 
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(createLabeledHpBar("G_B1", gateB1HpBar));
+        panel.add(Box.createVerticalStrut(7));
+
+        panel.add(createLabeledHpBar("G_B2", gateB2HpBar));
         panel.add(Box.createVerticalGlue());
 
-        panel.add(woodRedImage);
-        panel.add(woodRedLabel);
         panel.add(Box.createVerticalStrut(20));
-        panel.add(princessRedImage);
-        panel.add(princessRedLabel);
+
+        panel.add(createLabeledHpBar("G_R1", gateR1HpBar));
+        panel.add(Box.createVerticalStrut(7));
+
+        panel.add(createLabeledHpBar("G_R2", gateR2HpBar));
+        panel.add(Box.createVerticalStrut(5));
+
+        panel.add(createLeftAlignedPanel(woodRedImage));
+        panel.add(createLeftAlignedPanel(woodRedLabel));
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(createLeftAlignedPanel(princessRedImage));
+        panel.add(createLeftAlignedPanel(princessRedLabel));
         panel.add(Box.createVerticalStrut(10));
-        panel.add(redTeamLabel);
+        panel.add(createLeftAlignedPanel(redTeamLabel));
 
         return panel;
     }
@@ -224,12 +242,68 @@ public class BlackForestView extends JFrame implements MapView {
     private void updateResourcePanel() {
         woodBlueLabel.setText(String.valueOf(model.getWoodAmountBlue().get()));
         woodRedLabel.setText(String.valueOf(model.getWoodAmountRed().get()));
-        if (model.getPrincessByName("princess_b").get().isCarried()){
+
+        if (model.getPrincessByName("princess_b").get().isCarried()) {
             princessBlueLabel.setText("Picked Up");
+        } else {
+            princessBlueLabel.setText("On ground");
         }
-        if (model.getPrincessByName("princess_r").get().isCarried()){
+
+        if (model.getPrincessByName("princess_r").get().isCarried()) {
             princessRedLabel.setText("Picked Up");
+        } else {
+            princessRedLabel.setText("On ground");
         }
+
+        updateGateStatus("gate_b1", gateB1HpBar);
+        updateGateStatus("gate_b2", gateB2HpBar);
+        updateGateStatus("gate_r1", gateR1HpBar);
+        updateGateStatus("gate_r2", gateR2HpBar);
+    }
+
+    private void updateGateStatus(String gateName, JProgressBar hpBar) {
+        Gate gate = model.getGateByName(gateName).get();
+        hpBar.setMaximum(gate.getMaxHp());
+        hpBar.setValue(gate.getHp());
+        hpBar.setForeground(gate.getHp() > (gate.getMaxHp() / 2) ? Color.GREEN : Color.RED);
+    }
+
+    private JProgressBar createHpBar() {
+        JProgressBar hpBar = new JProgressBar(0, 100); // Assuming 100 is the max HP
+        hpBar.setValue(100);
+        hpBar.setStringPainted(true);
+        hpBar.setForeground(Color.GREEN);
+        hpBar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return hpBar;
+    }
+
+    private JPanel createLabeledHpBar(String label, JProgressBar hpBar) {
+        Color lightBlue = new Color(173, 216, 230); // Light Sky Blue
+        Color lightRed = new Color(255, 182, 193); // Light Pink
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        JLabel gateLabel = new JLabel(label);
+
+        if (label.contains(""+'B')) {
+            panel.setBackground(lightBlue);
+            gateLabel.setForeground(Color.BLUE);
+        } else if (label.contains(""+'R')) {
+            panel.setBackground(lightRed);
+            gateLabel.setForeground(Color.RED);
+        }
+
+        panel.add(gateLabel);
+        panel.add(Box.createHorizontalStrut(5)); // Small spacing
+        panel.add(hpBar);
+        return panel;
+    }
+
+    private JPanel createLeftAlignedPanel(JLabel label) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setOpaque(false); // Keep background transparency
+        panel.add(label);
+        return panel;
     }
 
     // Update the agent list dynamically
