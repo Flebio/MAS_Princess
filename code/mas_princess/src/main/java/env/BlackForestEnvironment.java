@@ -241,6 +241,8 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             result = model.spawnAgent(agent);
 
             notifyModelChangedToView();
+
+
             try {
                 Thread.sleep(5000L / model.getFPS());
             } catch (InterruptedException ignored) {

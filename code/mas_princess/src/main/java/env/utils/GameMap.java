@@ -595,6 +595,7 @@ public class GameMap {
                             agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
                         }
                         agentCell.clearAgent();
+
                     }
 
 

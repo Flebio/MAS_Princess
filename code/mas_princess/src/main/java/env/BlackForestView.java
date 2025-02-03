@@ -31,6 +31,12 @@ public class BlackForestView extends JFrame implements MapView {
 
     private int outOfMapAnimationFrame = 0; // Track animation frame for OUT_OF_MAP zone
     private final ImageIcon[] outOfMapSprites = new ImageIcon[2]; // Hold river sprites for animation
+    private final ImageIcon[] outOfMapSpritesE = new ImageIcon[2];
+    private final ImageIcon[] outOfMapSpritesW = new ImageIcon[2];
+    private final ImageIcon[] outOfMapSpritesS = new ImageIcon[2];
+    private final ImageIcon[] outOfMapSpritesSW = new ImageIcon[2];
+    private final ImageIcon[] outOfMapSpritesSE = new ImageIcon[2];
+
     private final javax.swing.Timer outOfMapAnimationTimer = new javax.swing.Timer(500, e -> {
         outOfMapAnimationFrame = (outOfMapAnimationFrame + 1) % 2; // Toggle between 0 and 1
         refreshBackground(); // Refresh map with the new frame
@@ -411,13 +417,28 @@ public class BlackForestView extends JFrame implements MapView {
         // Load animated sprites for OUT_OF_MAP
         outOfMapSprites[0] = new ImageIcon(getClass().getResource("/sprites/river1.png"));
         outOfMapSprites[1] = new ImageIcon(getClass().getResource("/sprites/river2.png"));
+        outOfMapSpritesE[0] = new ImageIcon(getClass().getResource("/sprites/river_w.png"));
+        outOfMapSpritesE[1] = new ImageIcon(getClass().getResource("/sprites/river_w2.png"));
+        outOfMapSpritesW[0] = new ImageIcon(getClass().getResource("/sprites/river_e.png"));
+        outOfMapSpritesW[1] = new ImageIcon(getClass().getResource("/sprites/river_e2.png"));
+        outOfMapSpritesS[0] = new ImageIcon(getClass().getResource("/sprites/river_n.png"));
+        outOfMapSpritesS[1] = new ImageIcon(getClass().getResource("/sprites/river_n2.png"));
+        outOfMapSpritesSW[0] = new ImageIcon(getClass().getResource("/sprites/river_c_sw.png"));
+        outOfMapSpritesSW[1] = new ImageIcon(getClass().getResource("/sprites/river_c_sw2.png"));
+        outOfMapSpritesSE[0] = new ImageIcon(getClass().getResource("/sprites/river_c_se.png"));
+        outOfMapSpritesSE[1] = new ImageIcon(getClass().getResource("/sprites/river_c_se2.png"));
 
         // Add multiple battlefield sprites
-        battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield.png")));
+        for (int i = 0; i < 11; i++) {
+            battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield.png")));
+        }
+        for (int i = 0; i < 7; i++) {
+            battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield4.png")));
+        }
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield1.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield2.png")));
         battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield3.png")));
-        battlefieldSprites.add(new ImageIcon(getClass().getResource("/sprites/battlefield4.png")));
+
     }
 
     // Load sprites for each agent type
@@ -617,7 +638,20 @@ public class BlackForestView extends JFrame implements MapView {
 
                     // Handle animation for OUT_OF_MAP zone
                     if (zoneType == Zone.OUT_OF_MAP) {
-                        zoneSprite = outOfMapSprites[outOfMapAnimationFrame];
+                        boolean hasBattlefieldN = y > 0 && model.getCellByPosition(Vector2D.of(x, y - 1)).getZoneType() == Zone.BATTLEFIELD;
+                        boolean hasBattlefieldS = y < model.getHeight() - 1 && model.getCellByPosition(Vector2D.of(x, y + 1)).getZoneType() == Zone.BATTLEFIELD;
+                        boolean hasBattlefieldE = x < model.getWidth() - 1 && model.getCellByPosition(Vector2D.of(x + 1, y)).getZoneType() == Zone.BATTLEFIELD;
+                        boolean hasBattlefieldW = x > 0 && model.getCellByPosition(Vector2D.of(x - 1, y)).getZoneType() == Zone.BATTLEFIELD;
+
+                        if (hasBattlefieldS && !hasBattlefieldN && !hasBattlefieldE && !hasBattlefieldW) zoneSprite = outOfMapSpritesS[outOfMapAnimationFrame];
+                        else if (hasBattlefieldN && !hasBattlefieldS && !hasBattlefieldE && !hasBattlefieldW) zoneSprite = new ImageIcon(getClass().getResource("/sprites/river_s.png"));
+                        else if (hasBattlefieldE && !hasBattlefieldS && !hasBattlefieldN && !hasBattlefieldW) zoneSprite = outOfMapSpritesE[outOfMapAnimationFrame];
+                        else if (hasBattlefieldW && !hasBattlefieldS && !hasBattlefieldN && !hasBattlefieldE) zoneSprite = outOfMapSpritesW[outOfMapAnimationFrame];
+                        else if (hasBattlefieldN && hasBattlefieldE) zoneSprite = new ImageIcon(getClass().getResource("/sprites/river_c_ne.png"));
+                        else if (hasBattlefieldN && hasBattlefieldW) zoneSprite = new ImageIcon(getClass().getResource("/sprites/river_c_nw.png"));
+                        else if (hasBattlefieldS && hasBattlefieldE) zoneSprite = outOfMapSpritesSE[outOfMapAnimationFrame];
+                        else if (hasBattlefieldS && hasBattlefieldW) zoneSprite = outOfMapSpritesSW[outOfMapAnimationFrame];
+                        else zoneSprite = outOfMapSprites[outOfMapAnimationFrame];
                     } else {
                         zoneSprite = zoneType == Zone.BATTLEFIELD
                                 ? randomizedBattlefieldSprites.get(position)
@@ -830,7 +864,7 @@ public class BlackForestView extends JFrame implements MapView {
         showTemporaryEffect(position, "/sprites/damage.png", 250);
     }
     public void triggerDeathView(Vector2D position) {
-        showTemporaryEffect(position, "/sprites/dead.png", 500);
+        showTemporaryEffect(position, "/sprites/dead.png", 250);
     }
 
 
