@@ -32,8 +32,10 @@ public interface MapModel {
         return setAgentPose(agent, position.getX(), position.getY(), orientation);
     }
 
+//    public boolean removeAgent(Agent agent);
     boolean spawnAgent(Agent agent);
-    boolean attackAgent(Agent attacking_agent, Agent target);
+    boolean attackAgent(Agent attacking_agent, Agent target, boolean crit);
+    boolean healAgent(Agent attacking_agent, Agent target);
 
     boolean moveAgent(Agent agent, int stepSize, Direction direction);
     Optional<Agent> getAgentByPosition(Vector2D position);
@@ -57,15 +59,8 @@ public interface MapModel {
     Set<Agent> getAgentNeighbours(Agent agent, int range);
     Set<Gate> getGateNeighbours(Agent agent, String team, int range);
     Set<Tree> getTreeNeighbours(Agent agent, int range);
-    default Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent) {
-        Vector2D pos = this.getAgentPosition(agent);
-        Orientation dir = this.getAgentDirection(agent);
-        return Stream.of(Direction.values()).collect(Collectors.toMap(
-                k -> k,
-                v -> pos.afterStep(1, dir.rotate(v))
-        ));
-        // Maybe here we can do something for the range
-    }
+    Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent);
+
     boolean attackGate(Agent attacking_agent, Gate target);
     boolean repairGate(Agent attacking_agent, Gate target);
     boolean attackTree(Agent attacking_agent, Tree target);
@@ -74,7 +69,7 @@ public interface MapModel {
     Optional<Princess> getPrincessByName(String pName);
 
     boolean pickUpPrincess(Agent agent, Princess target);
-
+    boolean resetAgentHp(Agent agent);
     void setView(MapView view);
 
     void addWood(Agent agent);
@@ -83,7 +78,5 @@ public interface MapModel {
     boolean isEnoughWoodBlue();
     AtomicInteger getWoodAmountBlue();
     AtomicInteger getWoodAmountRed();
-
-    public boolean avoidTrees(Agent agent);
 
 }

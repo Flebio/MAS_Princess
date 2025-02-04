@@ -57,8 +57,8 @@ public abstract class Agent extends jason.asSemantics.Agent {
         return hp;
     }
 
-    public void setHp(int hp) {
-        this.hp = hp;
+    public void setHp(int new_hp) {
+        this.hp = Math.max(0, Math.min(new_hp, this.getMaxHp()));
     }
 
     public int getMaxHp() {

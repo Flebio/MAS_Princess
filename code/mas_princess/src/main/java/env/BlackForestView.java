@@ -173,6 +173,7 @@ public class BlackForestView extends JFrame implements MapView {
         ImageIcon princessBlueIcon = princessSprites.get("blue");
         ImageIcon princessRedIcon = princessSprites.get("red");
 
+
         // Create labels for icons
         JLabel woodBlueImage = new JLabel(woodBlueIcon);
         JLabel woodRedImage = new JLabel(woodRedIcon);
@@ -636,12 +637,27 @@ public class BlackForestView extends JFrame implements MapView {
                     Zone zoneType = cell.getZoneType();
                     ImageIcon zoneSprite;
 
+
                     // Handle animation for OUT_OF_MAP zone
                     if (zoneType == Zone.OUT_OF_MAP) {
-                        boolean hasBattlefieldN = y > 0 && model.getCellByPosition(Vector2D.of(x, y - 1)).getZoneType() == Zone.BATTLEFIELD;
-                        boolean hasBattlefieldS = y < model.getHeight() - 1 && model.getCellByPosition(Vector2D.of(x, y + 1)).getZoneType() == Zone.BATTLEFIELD;
-                        boolean hasBattlefieldE = x < model.getWidth() - 1 && model.getCellByPosition(Vector2D.of(x + 1, y)).getZoneType() == Zone.BATTLEFIELD;
-                        boolean hasBattlefieldW = x > 0 && model.getCellByPosition(Vector2D.of(x - 1, y)).getZoneType() == Zone.BATTLEFIELD;
+                        boolean isBridge = cell.getStructure() instanceof Bridge;
+                        Zone effectiveZoneType = isBridge ? Zone.OUT_OF_MAP : cell.getZoneType();
+
+                        boolean hasBattlefieldN = y > 0 && (model.getCellByPosition(Vector2D.of(x, y - 1)).getStructure() instanceof Bridge
+                                ? Zone.OUT_OF_MAP
+                                : model.getCellByPosition(Vector2D.of(x, y - 1)).getZoneType()) == Zone.BATTLEFIELD;
+
+                        boolean hasBattlefieldS = y < model.getHeight() - 1 && (model.getCellByPosition(Vector2D.of(x, y + 1)).getStructure() instanceof Bridge
+                                ? Zone.OUT_OF_MAP
+                                : model.getCellByPosition(Vector2D.of(x, y + 1)).getZoneType()) == Zone.BATTLEFIELD;
+
+                        boolean hasBattlefieldE = x < model.getWidth() - 1 && (model.getCellByPosition(Vector2D.of(x + 1, y)).getStructure() instanceof Bridge
+                                ? Zone.OUT_OF_MAP
+                                : model.getCellByPosition(Vector2D.of(x + 1, y)).getZoneType()) == Zone.BATTLEFIELD;
+
+                        boolean hasBattlefieldW = x > 0 && (model.getCellByPosition(Vector2D.of(x - 1, y)).getStructure() instanceof Bridge
+                                ? Zone.OUT_OF_MAP
+                                : model.getCellByPosition(Vector2D.of(x - 1, y)).getZoneType()) == Zone.BATTLEFIELD;
 
                         if (hasBattlefieldS && !hasBattlefieldN && !hasBattlefieldE && !hasBattlefieldW) zoneSprite = outOfMapSpritesS[outOfMapAnimationFrame];
                         else if (hasBattlefieldN && !hasBattlefieldS && !hasBattlefieldE && !hasBattlefieldW) zoneSprite = new ImageIcon(getClass().getResource("/sprites/river_s.png"));
@@ -702,7 +718,7 @@ public class BlackForestView extends JFrame implements MapView {
                     }
 
                     Agent agent = cell.getAgent();
-                    if (agent != null) {
+                    if (agent != null && agent.getHp() > 0) {
                         ImageIcon agentIcon = getAgentIcon(agent);
                         if (agentIcon != null) {
                             combinedImage = new ImageIcon(createImageWithTransparency(combinedImage, agentIcon.getImage()));
@@ -760,11 +776,18 @@ public class BlackForestView extends JFrame implements MapView {
 
     // Get the appropriate structure icon
     private ImageIcon getStructureIcon(MapStructure structure) {
-        if (structure instanceof Gate) {
-            if (!((Gate) structure).isDestroyed()){
-                return new ImageIcon(getClass().getResource("/sprites/gate.png"));
+        if (structure instanceof Gate gate) {
+            boolean isDestroyed = gate.isDestroyed();
+            boolean isRedTeam = gate.getTeam(); // Assuming 'true' means red, 'false' means blue
+
+            if (isDestroyed) {
+                return new ImageIcon(getClass().getResource(isRedTeam
+                        ? "/sprites/brokengate_r.png"
+                        : "/sprites/brokengate_b.png"));
             } else {
-                return new ImageIcon(getClass().getResource("/sprites/brokengate.png"));
+                return new ImageIcon(getClass().getResource(isRedTeam
+                        ? "/sprites/gate_r.png"
+                        : "/sprites/gate_b.png"));
             }
         } else if (structure instanceof Wall) {
             return new ImageIcon(getClass().getResource("/sprites/wall.png"));

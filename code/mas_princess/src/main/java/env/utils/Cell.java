@@ -104,6 +104,8 @@ public class Cell {
                 // Is a Gate and destroyed -> Not occupied
                 if (structure instanceof Gate && ((Gate) structure).isDestroyed()) {
                     return false;
+                } else if (structure instanceof Gate && agent != null && agent.getTeam() != movingAgent.getTeam()) {
+                    return false;
                 }
 
                 // Is a Gate and belongs to the same team as the agent -> Not occupied

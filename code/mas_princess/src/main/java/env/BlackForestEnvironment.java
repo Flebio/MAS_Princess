@@ -28,11 +28,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     static Logger logger = Logger.getLogger(BlackForestEnvironment.class.getName());
     private MapModel model;
     private BlackForestView view;
+    private long threadSleep, threadSleepRespawn;
 
     @Override
     public void init(final String[] args) {
         this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]), null);
-
+//        this.threadSleep = 1000L / model.getFPS(); // 1000ms / 4 = 250ms = 0.25s
+        this.threadSleep = 350L; // 1000ms / 4 = 250ms = 0.25s
+        this.threadSleepRespawn = threadSleep * 30; // 250ms * 60 = 15000ms = 15s
         this.view = new BlackForestView(model);
 
         this.model.setView(this.view);
@@ -50,11 +53,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public Agent initializeAgentIfNeeded(String agentName) {
         Optional<Agent> optionalAgent = this.model.getAgentByName(agentName);
 
-//        if (!optionalAgent.isEmpty() && optionalAgent.get().getHp() == 0) {
+//        if (!optionalAgent.isEmpty() && optionalAgent.get().getHp() <= 0) {
 //            System.out.println("Eccolo:  " + optionalAgent);
 //        }
-        if (optionalAgent.isEmpty()) {
-            //System.out.println("NECESSARIO");
+         if (optionalAgent.isEmpty()) {
+//            System.out.println("NECESSARIO");
             String[] parts = agentName.split("_");
 
             String type = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);  // Capitalize first letter of type
@@ -129,9 +132,9 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         personalBeliefs.add(Literal.parseLiteral(String.format("objective_position(%d,%d)", closest_objective.getSecond().getX(), closest_objective.getSecond().getY())));
 
         if (closest_objective.getFirst().equals("my_team_lost")) {
-            personalBeliefs.add(Literal.parseLiteral("state(win)"));
-        } else if (closest_objective.getFirst().equals("my_team_won")) {
             personalBeliefs.add(Literal.parseLiteral("state(lost)"));
+        } else if (closest_objective.getFirst().equals("my_team_won")) {
+            personalBeliefs.add(Literal.parseLiteral("state(win)"));
         } else {
             personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
         }
@@ -148,8 +151,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Collection<Literal> surroundings = model.getAgentSurroundingPositions(agent).entrySet().stream()
                 .map(entry -> proximityPerceptFor(agent, entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+
         surroundings.add(Literal.parseLiteral(String.format("zone_type(%s)", this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType().name().toLowerCase())));
-//        logger.info("Surroundings(" + agent.getName() + ") -> " + surroundings);
+
+        MapStructure structure = this.model.getCellByPosition(agent.getPose().getPosition()).getStructure();
+        if (structure != null & (structure instanceof Bridge)) {
+            surroundings.add(Literal.parseLiteral(String.format("structure(%s, %d)", structure.getName().toLowerCase(), ((Bridge) structure).getSlipProbability())));
+        }
+
         return surroundings;
     }
 
@@ -171,6 +180,9 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 return Literal.parseLiteral(String.format("surrounding_enemy(%s)", direction.name().toLowerCase()));
             }
         } else if (structure != null) {
+            if ((structure instanceof Tree tree) && tree.isDestroyed()) {
+                return Literal.parseLiteral(String.format("free(%s)", direction.name().toLowerCase()));
+            }
             return Literal.parseLiteral(String.format("%s(%s)", structure.getClass().getSimpleName().toLowerCase(), direction.name().toLowerCase()));
         } else if (resource != null) {
             return Literal.parseLiteral(String.format("%s(%s)", resource.getClass().getSimpleName().toLowerCase(), direction.name().toLowerCase()));
@@ -183,51 +195,53 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public Collection<Literal> inRangePercepts(Agent agent) {
         Collection<Literal> in_range = new ArrayList<>();
 
-        // Add percepts for agents in range
-        in_range.addAll(model.getAgentNeighbours(agent, agent.getAttackRange()).stream()
-                .map(it -> {
-                    String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_range" : "enemy_in_range";
-                    return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
-                })
-                .map(Literal::parseLiteral)
-                .collect(Collectors.toList()));
+        if (!(agent.getCarriedItem() != null & (agent.getCarriedItem() instanceof Princess))) {
 
-        // Add percepts for enemy gates in range
-        in_range.addAll(model.getGateNeighbours(agent, "enemy", agent.getAttackRange()).stream()
-                .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
-                .map(Literal::parseLiteral)
-                .collect(Collectors.toList()));
-
-        if (agent instanceof Gatherer) {
-            // Add percepts for ally gates in range
-            in_range.addAll(model.getGateNeighbours(agent, "ally", agent.getAttackRange()).stream()
-                    .map(gate -> String.format("ally_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
+            // Add percepts for agents in range
+            in_range.addAll(model.getAgentNeighbours(agent, agent.getAttackRange()).stream()
+                    .map(it -> {
+                        String relation = (it.getTeam() == agent.getTeam()) ? "ally_in_range" : "enemy_in_range";
+                        return String.format("%s(%s, %d)", relation, it.getName(), it.getHp());
+                    })
                     .map(Literal::parseLiteral)
                     .collect(Collectors.toList()));
 
-            if (!model.avoidTrees(agent)) {
+            // Add percepts for enemy gates in range
+            in_range.addAll(model.getGateNeighbours(agent, "enemy", agent.getAttackRange()).stream()
+                    .map(gate -> String.format("enemy_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
+                    .map(Literal::parseLiteral)
+                    .collect(Collectors.toList()));
+
+            if (agent instanceof Gatherer) {
+                // Add percepts for ally gates in range
+                in_range.addAll(model.getGateNeighbours(agent, "ally", agent.getAttackRange()).stream()
+                        .map(gate -> String.format("ally_gate_in_range(%s, %d)", gate.getName(), gate.getHp()))
+                        .map(Literal::parseLiteral)
+                        .collect(Collectors.toList()));
+
                 // Add percepts for trees in range
                 in_range.addAll(model.getTreeNeighbours(agent, agent.getAttackRange()).stream()
                         .map(tree -> String.format("tree_in_range(%s, %d)", tree.getName(), tree.getHp()))
                         .map(Literal::parseLiteral)
                         .collect(Collectors.toList()));
             }
-        }
 
-        // Add percepts for princess in range
-        in_range.addAll(model.getPrincessNeighbours(agent, "ally", 1).stream()
-                .map(princess -> String.format("ally_princess_in_range(%s)", princess.getName()))
-                .map(Literal::parseLiteral)
-                .collect(Collectors.toList()));
-
-        if (!((this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.BBASE) ||
-                (this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.RBASE))) {
-
-            in_range.addAll(model.getPrincessNeighbours(agent, "enemy", 1).stream()
-                    .map(princess -> String.format("enemy_princess_in_range(%s)", princess.getName()))
+            // Add percepts for princess in range
+            in_range.addAll(model.getPrincessNeighbours(agent, "ally", 1).stream()
+                    .map(princess -> String.format("ally_princess_in_range(%s)", princess.getName()))
                     .map(Literal::parseLiteral)
                     .collect(Collectors.toList()));
+
+            if (!((this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.BBASE) ||
+                    (this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.RBASE))) {
+
+                in_range.addAll(model.getPrincessNeighbours(agent, "enemy", 1).stream()
+                        .map(princess -> String.format("enemy_princess_in_range(%s)", princess.getName()))
+                        .map(Literal::parseLiteral)
+                        .collect(Collectors.toList()));
+            }
         }
+
 
         return in_range;
     }
@@ -237,19 +251,23 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Agent agent = initializeAgentIfNeeded(ag);
 
         final boolean result;
-        if (agent.getHp() <= 0) {
-            result = model.spawnAgent(agent);
 
+        if (agent.getHp() <= 0 || action.toString().contains("respawn")) {
+            this.model.printAgentList(logger);
+            agent.setHp(0);
+            result = model.spawnAgent(agent);
             notifyModelChangedToView();
 
-
             try {
-                Thread.sleep(5000L / model.getFPS());
+                Thread.sleep(threadSleepRespawn); // Proportional to normal sleep time
             } catch (InterruptedException ignored) {
             }
 
+            this.model.resetAgentHp(agent);
+
             return result;
         }
+
         //logger.info(ag + " does action: " + action.toString());
 
         if (movementActions.containsValue(action)) {
@@ -276,10 +294,20 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                 notifyModelChangedToView();
             }
         } else if (action.toString().contains("attack_enemy")) {
-            Agent target = initializeAgentIfNeeded(action.getTerm(0).toString());
-            result = model.attackAgent(agent, target);
+            Optional<Agent> target = this.model.getAgentByName(action.getTerm(0).toString());
+
+            boolean crit = Boolean.parseBoolean(action.getTerm(1).toString());
+
+            result = model.attackAgent(agent, target.get(), crit);
+
             notifyModelChangedToView();
-        }else if (action.toString().contains("attack_gate")) {
+        } else if (action.toString().contains("heal_ally")) {
+            Optional<Agent> target = this.model.getAgentByName(action.getTerm(0).toString());
+
+            result = model.healAgent(agent, target.get());
+
+            notifyModelChangedToView();
+        } else if (action.toString().contains("attack_gate")) {
             Optional<Gate> target = this.model.getGateByName(action.getTerm(0).toString());
             if (target.get() == null) {
                 return false;
@@ -307,24 +335,13 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.pickUpPrincess(agent, target.get());
             notifyModelChangedToView();
-//        }else if (action.toString().contains("respawn")) {
-//            result = model.spawnAgent(agent);
-//
-//            notifyModelChangedToView();
-//            try {
-//                    Thread.sleep(5000L / model.getFPS());
-//            } catch (InterruptedException ignored) {
-//            }
-//
-//            return result;
-
         } else{
             logger.warning("Unknown action: " + action);
             return false;
         }
 
         try {
-                Thread.sleep(400L / model.getFPS());
+            Thread.sleep(threadSleep);
         } catch (InterruptedException ignored) {
         }
 

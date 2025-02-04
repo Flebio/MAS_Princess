@@ -1,8 +1,9 @@
-/* Warrior Agent Initialization */
-hp(100).
-att_damage(20).
-miss_probability(20).
-crit_probability(15).
+/* Priest Agent Initialization */
+hp(90).
+heal_power(20).
+att_damage(5).
+miss_probability(15).
+crit_probability(10).
 
 p1(0.0).
 p2(0.0).
@@ -12,20 +13,21 @@ p2(0.0).
 +!spawn
     <-
         //.wait(5000);
-        -+hp(100);
+        -+hp(90);
         !savePrincess.
 
 -!spawn
     <-
         !savePrincess.
 
-+!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
++!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & heal_power(UP) & state(S) & hp(HP)
     <-
         ?check_win(S);
         ?check_hp(HP);
         ?check_structure_effect(S);
         ?allyPrincessInRange(S);
         ?enemyPrincessInRange(S);
+        ?allyInRange(S, UP);
         ?enemyInRange(S, AD);
         ?enemyGateInRange(S);
         !move_towards_objective.
@@ -60,12 +62,12 @@ p2(0.0).
 
         .random(X);
         if(X <= (EP / 100.0)) {
+            -+hp(0);
             .drop_all_desires;
             .drop_all_intentions;
             .drop_all_events;
             .print("Dead. Respawning...");
             respawn(true);
-            -+hp(0);
             !spawn;
         }.
 
@@ -129,7 +131,7 @@ p2(0.0).
     <-
         //.print("Checking if gate is in range...");
         utils.check_in_range(enemy_gate_in_range);
-        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for gates in range
         attack_gate(T);
         !savePrincess.
 
@@ -138,6 +140,22 @@ p2(0.0).
         true.
         //.fail.
         //.print("I got zero gates.").
+
++?allyInRange(S, UP)
+    <-
+        //.print("Checking if ally is in range...");
+        utils.check_in_range(ally_in_range);
+        ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
+        HealMessage = update_hp(UP);
+        .send(T, tell, HealMessage);
+        heal_ally(T);
+        !savePrincess.
+
+-?allyInRange(S, UP)
+    <-
+        true.
+        //.print("I got zero allies.").
+        //.fail.
 
 +?allyPrincessInRange(S)
     <-
@@ -166,7 +184,6 @@ p2(0.0).
         true.
         //.fail.
         //.print("I got zero princesses.").
-
 
 /* Move towards the gate based on position in the base */
 /* We prefer to go first in the direction that is farther from our position instead of (X >= 0.5).

@@ -9,10 +9,12 @@ import env.objects.resources.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BlackForestModel implements MapModel {
     private final GameMap gameMap;
-    private long fps = 1L;
+    private long fps = 4L;
 
     public BlackForestModel(int width, int height, MapView view) {
         this.gameMap = new GameMap(width, height, view);
@@ -97,15 +99,26 @@ public class BlackForestModel implements MapModel {
         return this.gameMap.setAgentPose(agent, x, y, orientation);
     }
 
+//    @Override
+//    public boolean removeAgent(Agent agent) {
+//        return this.gameMap.removeAgent(agent);
+//    }
+
     @Override
     public boolean spawnAgent(Agent agent) {
         return this.gameMap.spawnAgent(agent);
     }
 
     @Override
-    public boolean attackAgent(Agent attacking_agent, Agent target) {
-        return this.gameMap.attackAgent(attacking_agent, target);
+    public boolean attackAgent(Agent attacking_agent, Agent target, boolean crit) {
+        return this.gameMap.attackAgent(attacking_agent, target, crit);
     }
+
+    @Override
+    public boolean healAgent(Agent healing_agent, Agent target) {
+        return this.gameMap.healAgent(healing_agent, target);
+    }
+
 
     @Override
     public boolean attackGate(Agent attacking_agent, Gate target) {
@@ -149,6 +162,11 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
+    public Map<Direction, Vector2D> getAgentSurroundingPositions(Agent agent) {
+        return this.gameMap.getAgentSurroundingPositions(agent);
+    }
+
+    @Override
     public Optional<Gate> getGateByName(String gName) { return this.gameMap.getGateByName(gName); }
     @Override
     public Optional<Tree> getTreeByName(String tName) {
@@ -161,7 +179,8 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public Optional<Princess> getPrincessByName(String pName) { return this.gameMap.getPrincessByName(pName); }
+    public Optional<Princess> getPrincessByName(String pName)
+    { return this.gameMap.getPrincessByName(pName); }
 
     @Override
     public boolean pickUpPrincess(Agent agent, Princess target) {return this.gameMap.pickUpPrincess(agent, target);}
@@ -181,33 +200,6 @@ public class BlackForestModel implements MapModel {
     public boolean isEnoughWoodBlue() { return this.gameMap.isEnoughWoodBlue(); }
 
     @Override
-    public boolean avoidTrees(Agent agent) {
-        boolean isBlueTeam = !agent.getTeam();
-        boolean isRedTeam = agent.getTeam();
-
-        boolean hasEnoughWoodBlue = this.isEnoughWoodBlue();
-        boolean hasEnoughWoodRed = this.isEnoughWoodRed();
-
-        boolean blueGateDestroyed = this.getGateByName("gate_b1").get().isDestroyed() ||
-                this.getGateByName("gate_b2").get().isDestroyed();
-        boolean redGateDestroyed = this.getGateByName("gate_r1").get().isDestroyed() ||
-                this.getGateByName("gate_r2").get().isDestroyed();
-
-        // If the agent is on the blue team and meets the conditions, avoid trees
-        if (isBlueTeam && hasEnoughWoodBlue && blueGateDestroyed) {
-            return true;
-        }
-
-        // If the agent is on the red team and meets the conditions, avoid trees
-        if (isRedTeam && hasEnoughWoodRed && redGateDestroyed) {
-            return true;
-        }
-
-        return false; // Otherwise, do not avoid trees
-    }
-
-
-    @Override
     public AtomicInteger getWoodAmountRed() {
         return gameMap.getWoodAmountRed();
     }
@@ -216,5 +208,8 @@ public class BlackForestModel implements MapModel {
     public AtomicInteger getWoodAmountBlue() {
         return gameMap.getWoodAmountBlue();
     }
+
+    @Override
+    public boolean resetAgentHp(Agent agent) { return this.gameMap.resetAgentHp(agent); }
 
 }

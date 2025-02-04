@@ -7,15 +7,14 @@ MAS princess {
 	agents: // which agents partecipates the MAS?
 	    gatherer_b1 gatherer_agent;
 		archer_b2 archer_agent;
-		archer_b3 archer_agent;
+		//archer_b3 archer_agent;
+		//priest_b4 priest_agent;
 		warrior_b4 warrior_agent;
-		warrior_b5 warrior_agent;
 
 	    gatherer_r1 gatherer_agent;
-		archer_r2 archer_agent;
+		warrior_r2 warrior_agent;
         warrior_r3 warrior_agent;
         warrior_r4 warrior_agent;
-		warrior_r5 warrior_agent;
 
 	aslSourcePath: // where to find agents' source code
 		"src/main/asl";

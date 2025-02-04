@@ -81,6 +81,11 @@ public class check_in_range extends DefaultInternalAction {
                                 targetHp = entityHp;
                                 targetedEntity = entityName;
                             }
+                    } else if (percept.equals("ally_in_range")) {
+                        if (entityHp < targetHp && entityHp > 0) {
+                            targetHp = entityHp;
+                            targetedEntity = entityName;
+                        }
                     } else if (entityHp < targetHp && entityHp > 0) {
                         targetHp = entityHp;
                         targetedEntity = entityName;

@@ -1,7 +1,8 @@
 /* Warrior Agent Initialization */
 hp(100).
-att_damage(10).
+att_damage(20).
 miss_probability(20).
+crit_probability(15).
 
 p1(0.0).
 p2(0.0).
@@ -22,9 +23,10 @@ p2(0.0).
     <-
         ?check_win(S);
         ?check_hp(HP);
+        ?check_structure_effect(S);
         ?allyPrincessInRange(S);
         ?enemyPrincessInRange(S);
-        ?enemyInRange(S, update_hp(AD));
+        ?enemyInRange(S, AD);
         ?enemyGateInRange(S);
         !move_towards_objective.
 
@@ -36,15 +38,38 @@ p2(0.0).
     <-
         ?(S == win | S == lost);
         .drop_all_desires;
+        .drop_all_intentions;
         .drop_all_events;
 
         if (S == win) {
             .print("Game finished. We won.");
         } else {
             .print("Game finished. We lost.");
-        }.
+        }
+
+        .my_name(N);
+        .kill_agent(N).
 
 -?check_win(S)
+    <-
+        true.
+
++?check_structure_effect(S)
+    <-
+        ?(structure(ST, EP) & ST == bridge);
+
+        .random(X);
+        if(X <= (EP / 100.0)) {
+            .drop_all_desires;
+            .drop_all_intentions;
+            .drop_all_events;
+            .print("Dead. Respawning...");
+            respawn(true);
+            -+hp(0);
+            !spawn;
+        }.
+
+-?check_structure_effect(S)
     <-
         true.
 
@@ -52,6 +77,7 @@ p2(0.0).
     <-
         ?(HP <= 0);
         .drop_all_desires;
+        .drop_all_intentions;
         .drop_all_events;
         .print("Dead. Respawning...");
         //respawn(true);
@@ -64,25 +90,36 @@ p2(0.0).
 +update_hp(AD)[source(Sender)]: hp(HP)
     <-
         -update_hp(AD)[source(Sender)];
-        //.print("Received damage ", AD , " from ", Sender, ". Remaining hps: ", HP - AD);
-        -+hp(HP - AD).
+        //.print("Received damage ", AD , " from ", Sender, ". Remaining hps: ", HP + AD);
+        -+hp(HP + AD).
 
-+?enemyInRange(S, AttackMessage)
++?enemyInRange(S, AD)
     <-
         //.print("Checking if enemy is in range...");
         utils.check_in_range(enemy_in_range);
         ?(target(T) & hp(HP) & HP > 0); // Test goal: Checks for enemies in range
 
         if (T \== missed) {
-            .send(T, tell, AttackMessage);
-            attack_enemy(T);
+
+            .random(X);
+
+            if (crit_probability(P) & X <= (P / 100.0)) {
+                AttackMessage = update_hp((-AD)*5);
+                .send(T, tell, AttackMessage);
+                attack_enemy(T, true);
+            } else {
+                AttackMessage = update_hp(-AD);
+                .send(T, tell, AttackMessage);
+                attack_enemy(T, false);
+            }
+
         } else {
             .print("Attack missed.");
         }
 
         !savePrincess.
 
--?enemyInRange(S, AttackMessage)
+-?enemyInRange(S, AD)
     <-
         true.
         //.fail.
