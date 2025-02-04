@@ -254,6 +254,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         if (agent.getHp() <= 0 || action.toString().contains("respawn")) {
             this.model.printAgentList(logger);
+
+            if (agent.getCarriedItem() != null) {
+                this.model.printMap(logger);
+            }
+
             agent.setHp(0);
             result = model.spawnAgent(agent);
             notifyModelChangedToView();
@@ -329,11 +334,20 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             result = model.attackTree(agent, target.get());
             notifyModelChangedToView();
         }  else if (action.toString().contains("pick_up_princess")) {
+            System.out.println("PRIMA");
+            this.model.printAgentList(logger);
+            this.model.printMap(logger);
             Optional<Princess> target = this.model.getPrincessByName(action.getTerm(0).toString());
+
             if (target.get() == null) {
                 return false;
             }
             result = model.pickUpPrincess(agent, target.get());
+
+            System.out.println("DOPO");
+            this.model.printAgentList(logger);
+            this.model.printMap(logger);
+
             notifyModelChangedToView();
         } else{
             logger.warning("Unknown action: " + action);

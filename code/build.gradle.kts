@@ -36,6 +36,13 @@ subprojects {
         testImplementation("junit", "junit", "4.13.2")
     }
 
+    tasks.register<JavaExec>("runConfigWindow") {
+        group = "run"
+        mainClass.set("ConfigWindow")
+        classpath = sourceSets["main"].runtimeClasspath
+    }
+
+
     file(projectDir).listFiles().filter { it.extension == "mas2j" }.forEach { mas2jFile ->
         task<JavaExec>("run${mas2jFile.nameWithoutExtension.capitalized()}Mas") {
             group = "run"

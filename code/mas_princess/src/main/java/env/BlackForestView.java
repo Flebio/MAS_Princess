@@ -195,6 +195,7 @@ public class BlackForestView extends JFrame implements MapView {
         woodRedLabel = new JLabel("0");
         woodRedLabel.setForeground(Color.RED);
         princessBlueLabel = new JLabel("On ground");
+        //princessRedSpawnLabel = new JLabel("Spawn Point");
         princessBlueLabel.setForeground(Color.BLUE);
         princessRedLabel = new JLabel("On ground");
         princessRedLabel.setForeground(Color.RED);

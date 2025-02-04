@@ -93,6 +93,10 @@ public class Cell {
             return false;
         }
 
+        if (structure != null && (structure instanceof Empty) && movingResource != null && (movingResource instanceof Princess)) {
+            return false;
+        }
+
         // If there is a structure, validate its conditions
         if (structure != null && movingAgent != null) {
             if (structure.isWalkable()) {
@@ -156,12 +160,11 @@ public class Cell {
         if (structure instanceof Gate) return 'G';
         if (structure instanceof Wall) return 'M';
         if (structure instanceof Bridge) return 'B';
+        if (structure instanceof Empty) return 'E';
         return ' ';
     }
 
     private char getResourceSymbol() {
-        //if (resource instanceof Cake) return 'C';
-        //if (resource instanceof Wood) return 'L';
         if (resource instanceof Princess) return 'P';
         return ' ';
     }
@@ -169,18 +172,17 @@ public class Cell {
     private char getAgentSymbol() {
         if (agent instanceof Warrior) return 'W';
         if (agent instanceof Archer) return 'A';
+        if (agent instanceof Gatherer) return 'H';
+        if (agent instanceof Priest) return 'D';
         return ' ';
     }
 
-
-
-
     @Override
     public String toString() {
-        if (structure != null) {
-            return String.valueOf(getStructureSymbol());
-        } else if (resource != null) {
+        if (resource != null) {
             return String.valueOf(getResourceSymbol());
+        } else if (structure != null) {
+            return String.valueOf(getStructureSymbol());
         } else if (agent != null) {
             return String.valueOf(getAgentSymbol());
         }
