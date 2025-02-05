@@ -1,3 +1,5 @@
+package env;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -24,6 +26,9 @@ public class ConfigWindow extends JFrame {
     private final String MAS2J_FILE_PATH = mas2jFile.getAbsolutePath();
     private final String LOGO_PATH = SPRITE_PATH + "logo.png";
     private final File configFile = new File(projectRoot, "config.properties");
+    private static Process gameProcess; // Store the process
+
+
 
 
     public ConfigWindow() {
@@ -192,7 +197,11 @@ public class ConfigWindow extends JFrame {
             updateMas2jFile(width, height, agentsConfig);
             ConfigWindow.this.dispose();
 
-            launchGame();
+            try {
+                launchGame();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
     private void addAgentSelectionListener(JComboBox<Integer>[] teamDropdowns, boolean isBlueTeam) {
@@ -241,23 +250,30 @@ public class ConfigWindow extends JFrame {
         }
     }
 
-    private void launchGame() {
-        try {
+    private void launchGame() throws IOException {
+
             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", "gradlew.bat", "runMas_princessMas");
             processBuilder.redirectErrorStream(true);
             processBuilder.directory(projectRoot);
-            Process process = processBuilder.start();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) System.out.println(line);
+            gameProcess = processBuilder.start();
 
-            process.waitFor();
-            System.exit(0);
-        } catch (IOException | InterruptedException ex) {
-            ex.printStackTrace();
+            // Read output asynchronously to prevent blocking
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(gameProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
+
         }
-    }
+
+
+
 
     private void saveConfig() {
         Properties configProps = new Properties();
@@ -305,6 +321,76 @@ public class ConfigWindow extends JFrame {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+
+
+    public static void showGameResult(String winningTeam) {
+        JFrame resultFrame = new JFrame("Game Over");
+        resultFrame.setSize(300, 150);
+        resultFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        resultFrame.setLayout(new BorderLayout());
+
+        Color lightBlue = new Color(173, 216, 230);
+        Color lightRed = new Color(255, 182, 193);
+        Color backgroundColor = winningTeam.equals("Red Team") ? lightRed : lightBlue;
+        Color textColor = winningTeam.equals("Red Team") ? Color.RED : Color.BLUE;
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setBackground(backgroundColor);
+        contentPanel.setLayout(new BorderLayout());
+
+        JLabel resultLabel = new JLabel(winningTeam + " wins!", SwingConstants.CENTER);
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        resultLabel.setForeground(textColor);
+        contentPanel.add(resultLabel, BorderLayout.CENTER);
+
+        JButton restartButton = new JButton("Another Run?");
+        restartButton.addActionListener(e -> {
+            resultFrame.dispose();
+            terminateGameProcess();
+            restartJavaProcess();
+            SwingUtilities.invokeLater(() -> new ConfigWindow());
+        });
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(backgroundColor);
+        buttonPanel.add(restartButton);
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        resultFrame.add(contentPanel);
+        resultFrame.setLocationRelativeTo(null);
+        resultFrame.setVisible(true);
+    }
+
+    private static void terminateGameProcess() {
+        if (gameProcess != null) {
+            gameProcess.toHandle().destroyForcibly();
+            try {
+                gameProcess.waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void restartJavaProcess() {
+        try {
+            String javaBin = System.getProperty("java.home") + "/bin/java";
+            File currentJar = new File(ConfigWindow.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+
+            if (currentJar.getName().endsWith(".jar")) {
+                // Restart JAR
+                new ProcessBuilder(javaBin, "-jar", currentJar.getPath()).start();
+            } else {
+                // Restart class-based execution
+                new ProcessBuilder(javaBin, "-cp", System.getProperty("java.class.path"), ConfigWindow.class.getName()).start();
+            }
+
+            System.exit(0); // Kill current process
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

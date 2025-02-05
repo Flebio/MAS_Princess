@@ -38,7 +38,7 @@ subprojects {
 
     tasks.register<JavaExec>("runConfigWindow") {
         group = "run"
-        mainClass.set("ConfigWindow")
+        mainClass.set("env.ConfigWindow")
         classpath = sourceSets["main"].runtimeClasspath
     }
 

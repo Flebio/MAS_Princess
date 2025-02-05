@@ -4,7 +4,9 @@ import env.MapView;
 import env.agents.*;
 import env.objects.structures.*;
 import env.objects.resources.*;
+import env.ConfigWindow;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -830,7 +832,7 @@ public class GameMap {
         synchronized (this.agentsList) {
             if ((target.getHp()) > 0 && (target.getHp() < target.getMaxHp())) {
                 view.triggerAttackView(healing_agent.getPose().getPosition());
-                view.triggerDamageView(target.getPose().getPosition());
+                view.triggerHealView(target.getPose().getPosition());
 
                 int newHp = 0;
                 if ((healing_agent instanceof Priest priest)) {
@@ -1066,6 +1068,9 @@ public class GameMap {
 
         if (isInAllyBase) {
             this.win = agent.getTeam(); // false blue team, true red team
+            if (this.win != null) {
+                endGame(this.win);
+            }
             return new Pair<>("game_win", agent_position);
         } else if (isInEnemyBase) {
             if (isTeamBlue) {
@@ -1853,6 +1858,15 @@ public class GameMap {
             }
         }
     }
+
+    private void endGame(boolean redTeamWins) {
+        String winningTeam = redTeamWins ? "Red Team" : "Blue Team";
+        System.out.println("Game Over! " + winningTeam + " wins!");
+
+        // Show result popup after the game ends
+        SwingUtilities.invokeLater(() -> ConfigWindow.showGameResult(winningTeam));
+    }
+
 
     public void setView(MapView view) {
         this.view = view;

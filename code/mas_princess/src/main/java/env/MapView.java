@@ -7,5 +7,5 @@ public interface MapView {
     void notifyModelChanged();
     void triggerAttackView(Vector2D position);
     void triggerDamageView(Vector2D position);
-    void triggerDeathView(Vector2D position);
+    void triggerHealView(Vector2D position);
 }

@@ -887,8 +887,8 @@ public class BlackForestView extends JFrame implements MapView {
     public void triggerDamageView(Vector2D position) {
         showTemporaryEffect(position, "/sprites/damage.png", 250);
     }
-    public void triggerDeathView(Vector2D position) {
-        showTemporaryEffect(position, "/sprites/dead.png", 250);
+    public void triggerHealView(Vector2D position) {
+        showTemporaryEffect(position, "/sprites/heal.png", 250);
     }
 
 

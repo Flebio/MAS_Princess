@@ -2,14 +2,13 @@ MAS princess {
 	infrastructure: Centralised
 	environment: env.BlackForestEnvironment(40, 15)
 	agents:
-	gatherer_b1 gatherer_agent;
-	archer_b2 archer_agent;
+	archer_b1 archer_agent;
+	warrior_b2 warrior_agent;
 	warrior_b3 warrior_agent;
-	priest_b4 priest_agent;
-	gatherer_r1 gatherer_agent;
-	archer_r2 archer_agent;
-	warrior_r3 warrior_agent;
-	priest_r4 priest_agent;
+	warrior_b4 warrior_agent;
+	priest_b5 priest_agent;
+	archer_r1 archer_agent;
+	warrior_r2 warrior_agent;
 	aslSourcePath:
 	"src/main/asl";
 }
