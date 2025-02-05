@@ -1,24 +1,24 @@
 /* Warrior Agent Initialization */
 hp(80).
-att_damage(10).
+att_damage(18).
 miss_probability(30).
-crit_probability(10).
+crit_probability(13).
 
 p1(0.0).
 p2(0.0).
 
-!spawn.
+!savePrincess.
 
 +!spawn
     <-
-        //.wait(5000);
+        respawn(true);
+        ?state(spawn);
         -+hp(80);
         !savePrincess.
 
 -!spawn
     <-
-        !savePrincess.
-
+        !spawn.
 
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
@@ -68,7 +68,7 @@ p2(0.0).
             .drop_all_intentions;
             .drop_all_events;
             .print("Dead. Respawning...");
-            respawn(true);
+            //respawn(true);
             !spawn;
         }.
 

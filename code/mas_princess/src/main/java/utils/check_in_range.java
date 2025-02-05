@@ -109,19 +109,21 @@ public class check_in_range extends DefaultInternalAction {
         }
 
 
-        // If an entity is found, set it as the target
+        String isAgentDead = currentAgent.findBel(Literal.parseLiteral("state(_)"), un).getTerm(0).toString();
+        if (!isAgentDead.equals("dead")) {
+            // If an entity is found, set it as the target
+            if (targetedEntity != null && percept.equals("enemy_in_range")) { // Attack to enemy might fail
+                int randomValue = RAND.nextInt(100); // Generate a number between 0 and 99
+                int failPercentage = Integer.parseInt(currentAgent.findBel(Literal.parseLiteral("miss_probability(_)"), un).getTerm(0).toString());
 
-        if (targetedEntity != null && percept.equals("enemy_in_range")) { // Attack to enemy might fail
-            int randomValue = RAND.nextInt(100); // Generate a number between 0 and 99
-            int failPercentage = Integer.parseInt(currentAgent.findBel(Literal.parseLiteral("miss_probability(_)"), un).getTerm(0).toString());
-
-            if (randomValue < failPercentage) {
-                currentAgent.addBel(Literal.parseLiteral("target(missed)"));
-            } else {
+                if (randomValue < failPercentage) {
+                    currentAgent.addBel(Literal.parseLiteral("target(missed)"));
+                } else {
+                    currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
+                }
+            } else if (targetedEntity != null) {
                 currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
             }
-        } else if (targetedEntity != null) {
-            currentAgent.addBel(Literal.parseLiteral("target(" + targetedEntity + ")"));
         }
 
         // Always return true as per requirements

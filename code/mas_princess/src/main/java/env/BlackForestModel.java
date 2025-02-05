@@ -210,6 +210,6 @@ public class BlackForestModel implements MapModel {
     }
 
     @Override
-    public boolean resetAgentHp(Agent agent) { return this.gameMap.resetAgentHp(agent); }
+    public boolean resetAgent(Agent agent) { return this.gameMap.resetAgent(agent); }
 
 }

@@ -3,22 +3,23 @@ hp(90).
 heal_power(20).
 att_damage(5).
 miss_probability(15).
-crit_probability(10).
+crit_probability(15).
 
 p1(0.0).
 p2(0.0).
 
-!spawn.
+!savePrincess.
 
 +!spawn
     <-
-        //.wait(5000);
+        respawn(true);
+        ?state(spawn);
         -+hp(90);
         !savePrincess.
 
 -!spawn
     <-
-        !savePrincess.
+        !spawn.
 
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & heal_power(UP) & state(S) & hp(HP)
     <-
@@ -67,7 +68,7 @@ p2(0.0).
             .drop_all_intentions;
             .drop_all_events;
             .print("Dead. Respawning...");
-            respawn(true);
+            //respawn(true);
             !spawn;
         }.
 

@@ -16,7 +16,7 @@ public class ConfigWindow extends JFrame {
     private JComboBox<Integer> gathererRed, archerRed, warriorRed, priestRed;
     private JButton startGameButton;
     // Get the root project directory (code/)
-    File projectRoot = new File(System.getProperty("user.dir")).getParentFile();
+    static File projectRoot = new File(System.getProperty("user.dir")).getParentFile();
 
     // Define paths dynamically
     File mas2jFile = new File(projectRoot, "mas_princess/mas_princess.mas2j");
@@ -86,7 +86,7 @@ public class ConfigWindow extends JFrame {
         };
 
         String[] agentNames = {"Gatherer", "Archer", "Warrior", "Priest"};
-        gathererBlue = createAgentDropdown(2); // Limit Gatherer max 2
+        gathererBlue = createAgentDropdown(2); // Limit Gatherer max 1
         gathererRed = createAgentDropdown(2);
         archerBlue = createAgentDropdown(4);
         archerRed = createAgentDropdown(4);
@@ -219,8 +219,8 @@ public class ConfigWindow extends JFrame {
                     }
                 }
 
-                if (totalAgents > 5) {
-                    JOptionPane.showMessageDialog(null, "Max 5 agents per team!", "Error", JOptionPane.ERROR_MESSAGE);
+                if (totalAgents > 4) {
+                    JOptionPane.showMessageDialog(null, "Max 4 agents per team!", "Error", JOptionPane.ERROR_MESSAGE);
                     dropdown.setSelectedItem(0);
                 }
             });
@@ -250,7 +250,7 @@ public class ConfigWindow extends JFrame {
         }
     }
 
-    private void launchGame() throws IOException {
+    private static void launchGame() throws IOException {
 
             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", "gradlew.bat", "runMas_princessMas");
             processBuilder.redirectErrorStream(true);
@@ -324,11 +324,9 @@ public class ConfigWindow extends JFrame {
         }
     }
 
-
-
     public static void showGameResult(String winningTeam) {
         JFrame resultFrame = new JFrame("Game Over");
-        resultFrame.setSize(300, 150);
+        resultFrame.setSize(400, 200);
         resultFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         resultFrame.setLayout(new BorderLayout());
 
@@ -342,21 +340,35 @@ public class ConfigWindow extends JFrame {
         contentPanel.setLayout(new BorderLayout());
 
         JLabel resultLabel = new JLabel(winningTeam + " wins!", SwingConstants.CENTER);
-        resultLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        resultLabel.setFont(new Font("Arial", Font.BOLD, 18));
         resultLabel.setForeground(textColor);
         contentPanel.add(resultLabel, BorderLayout.CENTER);
 
-        JButton restartButton = new JButton("Another Run?");
-        restartButton.addActionListener(e -> {
+        // Button Panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(backgroundColor);
+        buttonPanel.setLayout(new FlowLayout());
+
+        // Restart with new configuration
+        JButton restartNewConfigButton = new JButton("Restart with New Config");
+        restartNewConfigButton.addActionListener(e -> {
             resultFrame.dispose();
             terminateGameProcess();
             restartJavaProcess();
             SwingUtilities.invokeLater(() -> new ConfigWindow());
         });
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setBackground(backgroundColor);
-        buttonPanel.add(restartButton);
+        // Exit Game
+        JButton exitButton = new JButton("Exit");
+        exitButton.addActionListener(e -> {
+            terminateGameProcess();
+            System.exit(0);
+        });
+
+        // Add buttons to panel
+        buttonPanel.add(restartNewConfigButton);
+        buttonPanel.add(exitButton);
+
         contentPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         resultFrame.add(contentPanel);

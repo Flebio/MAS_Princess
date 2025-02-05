@@ -69,7 +69,7 @@ public interface MapModel {
     Optional<Princess> getPrincessByName(String pName);
 
     boolean pickUpPrincess(Agent agent, Princess target);
-    boolean resetAgentHp(Agent agent);
+    boolean resetAgent(Agent agent);
     void setView(MapView view);
 
     void addWood(Agent agent);

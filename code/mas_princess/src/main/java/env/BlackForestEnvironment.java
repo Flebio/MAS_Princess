@@ -35,7 +35,8 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]), null);
 //        this.threadSleep = 1000L / model.getFPS(); // 1000ms / 4 = 250ms = 0.25s
         this.threadSleep = 350L; // 1000ms / 4 = 250ms = 0.25s
-        this.threadSleepRespawn = threadSleep * 30; // 250ms * 60 = 15000ms = 15s
+//        this.threadSleepRespawn = threadSleep * 30; // 250ms * 60 = 15000ms = 15s
+        this.threadSleepRespawn = threadSleep * 20; // 250ms * 60 = 15000ms = 15s
         this.view = new BlackForestView(model);
 
         this.model.setView(this.view);
@@ -118,7 +119,11 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     public Collection<Literal> personalBeliefsPercepts(Agent agent) {
         Collection<Literal> personalBeliefs = new ArrayList<>();
 
-        //personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
+//        personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
+//        if (agent.getHp() <= 0) {
+//            personalBeliefs.add(Literal.parseLiteral("dead(true)"));
+//        }
+
         personalBeliefs.add(Literal.parseLiteral(String.format("position(%d, %d)", agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY())));
         personalBeliefs.add(Literal.parseLiteral(String.format("orientation(%s)", agent.getPose().getOrientation().name().toLowerCase())));
 
@@ -253,13 +258,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         final boolean result;
 
         if (agent.getHp() <= 0 || action.toString().contains("respawn")) {
-            this.model.printAgentList(logger);
-
-            if (agent.getCarriedItem() != null) {
-                this.model.printMap(logger);
-            }
-
             agent.setHp(0);
+
+//            this.model.printAgentList(logger);
+
+//            if (agent.getCarriedItem() != null) {
+//                this.model.printMap(logger);
+//            }
+
             result = model.spawnAgent(agent);
             notifyModelChangedToView();
 
@@ -268,7 +274,8 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             } catch (InterruptedException ignored) {
             }
 
-            this.model.resetAgentHp(agent);
+            this.model.resetAgent(agent);
+            notifyModelChangedToView();
 
             return result;
         }
@@ -334,9 +341,9 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             result = model.attackTree(agent, target.get());
             notifyModelChangedToView();
         }  else if (action.toString().contains("pick_up_princess")) {
-            System.out.println("PRIMA");
-            this.model.printAgentList(logger);
-            this.model.printMap(logger);
+//            System.out.println("PRIMA");
+//            this.model.printAgentList(logger);
+//            this.model.printMap(logger);
             Optional<Princess> target = this.model.getPrincessByName(action.getTerm(0).toString());
 
             if (target.get() == null) {
@@ -344,9 +351,9 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.pickUpPrincess(agent, target.get());
 
-            System.out.println("DOPO");
-            this.model.printAgentList(logger);
-            this.model.printMap(logger);
+//            System.out.println("DOPO");
+//            this.model.printAgentList(logger);
+//            this.model.printMap(logger);
 
             notifyModelChangedToView();
         } else{

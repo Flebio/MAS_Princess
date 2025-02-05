@@ -109,24 +109,24 @@ public abstract class Agent extends jason.asSemantics.Agent {
     }
 
     // Utility Methods
-    public void takeDamage(int damage) {
-        this.hp -= damage;
-        if (this.hp < 0) {
-            this.hp = 0;  // Prevent negative HP
-        }
-    }
-
-    public boolean isAlive() {
-        return this.hp > 0;
-    }
+//    public void takeDamage(int damage) {
+//        this.hp -= damage;
+//        if (this.hp < 0) {
+//            this.hp = 0;  // Prevent negative HP
+//        }
+//    }
+//
+//    public boolean isAlive() {
+//        return this.hp > 0;
+//    }
 
     // Attack Method
-    public void attack(Agent target) {
-        if (target != null && this.isAlive()) {
-            // Apply attack power to target
-            target.takeDamage(this.attackPower);
-        }
-    }
+//    public void attack(Agent target) {
+//        if (target != null && this.isAlive()) {
+//            // Apply attack power to target
+//            target.takeDamage(this.attackPower);
+//        }
+//    }
 
     @Override
     public String toString() {

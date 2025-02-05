@@ -628,10 +628,10 @@ public class GameMap {
         return this.setAgentPose(agent, afterStep.getX(), afterStep.getY(), newOrientation);
     }
 
-    private synchronized  Cell getRandomBaseCell(Agent agent) {
-        // Get all unoccupied cells in the team's base zone with their positions
+    private synchronized Cell getRandomCell(Agent agent, Zone zone, boolean corner) {
+        // Get all unoccupied cells in the specified zone
         List<Cell> availableCells = getAllCells(
-                (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE,
+                zone,
                 null, null,
                 null, null,
                 null, null,
@@ -639,10 +639,19 @@ public class GameMap {
         );
 
         if (availableCells.isEmpty()) {
-            return null; //TUTTI QUESTI RETURN FALSE CHE STO AGGIUNGENDO PORTANO A STAMPARE "CONDITION FAILED" RICORDA // No available cells in the base
+            return null; // No available cells in the base
         }
 
-        // Select a random cell from the available cells
+        // If corner selection is required, filter the list
+        if (corner) {
+            availableCells = filterCornerCells(availableCells, zone);
+        }
+
+        if (availableCells.isEmpty()) {
+            return null; // No available corner cells
+        }
+
+        // Select a random cell from the available ones
         Cell randomCell = availableCells.get(RAND.nextInt(availableCells.size()));
         while (randomCell.isOccupied(agent, null)) {
             randomCell = availableCells.get(RAND.nextInt(availableCells.size()));
@@ -651,32 +660,79 @@ public class GameMap {
         return randomCell;
     }
 
-//    public synchronized boolean removeAgent(Agent agent) {
-//        synchronized (this.map) {
-//            synchronized (this.agentsList) {
-//                synchronized (this.resourcesList) {
-//                    // If the agent's HP is 0 or less, perform respawn logic
-//                    Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
-//                    if (agentCell != null) {
-//                        if (agentCell.getAgent() != null && agentCell.getAgent().getCarriedItem() != null) {
-//                            agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
-//                        }
-//                        agentCell.clearAgent();
-//                        this.agentsList.remove(agent.getName());
-//                        agent.setState("dead");
-//
-//                        return true;
-//                    }
-//                    return false;
-//                    }
-//            }
-//        }
-//    }
-    public synchronized boolean resetAgentHp (Agent agent) {
-        synchronized (this.agentsList) {
-            agent.setHp(agent.getMaxHp());
+
+    private List<Cell> filterCornerCells(List<Cell> cells, Zone zone) {
+        if (cells.isEmpty()) return cells;
+
+        // Find min/max x and y values
+        final int minX = cells.stream().mapToInt(c -> c.getPosition().getX()).min().orElse(Integer.MAX_VALUE);
+        final int maxX = cells.stream().mapToInt(c -> c.getPosition().getX()).max().orElse(Integer.MIN_VALUE);
+        final int minY = cells.stream().mapToInt(c -> c.getPosition().getY()).min().orElse(Integer.MAX_VALUE);
+        final int maxY = cells.stream().mapToInt(c -> c.getPosition().getY()).max().orElse(Integer.MIN_VALUE);
+
+        // Filter only the four corner cells
+        if (zone == Zone.BBASE) {
+
+            return cells.stream()
+                    .filter(cell -> {
+                        int x = cell.getPosition().getX();
+                        int y = cell.getPosition().getY();
+                        return (x == minX && y == minY) || // Bottom-left
+                                (x == minX && y == maxY) || // Top-left
+                                (x == maxX - 1 && y == minY) || // Bottom-right
+                                (x == maxX - 1 && y == maxY);   // Top-right
+                    })
+                    .collect(Collectors.toList());
+
+        } else if (zone == Zone.RBASE) {
+
+            return cells.stream()
+                    .filter(cell -> {
+                        int x = cell.getPosition().getX();
+                        int y = cell.getPosition().getY();
+                        return (x == minX + 1 && y == minY) || // Bottom-left
+                                (x == minX + 1 && y == maxY) || // Top-left
+                                (x == maxX  && y == minY) || // Bottom-right
+                                (x == maxX  && y == maxY);   // Top-right
+                    })
+                    .collect(Collectors.toList());
+
+        } else {
+
+            return cells.stream()
+                    .filter(cell -> {
+                        int x = cell.getPosition().getX();
+                        int y = cell.getPosition().getY();
+                        return (x == minX && y == minY) || // Bottom-left
+                                (x == minX  && y == maxY) || // Top-left
+                                (x == maxX  && y == minY) || // Bottom-right
+                                (x == maxX  && y == maxY);   // Top-right
+                    })
+                    .collect(Collectors.toList());
+
+
+        }
+
+    }
+
+    private synchronized boolean removeAgent(Agent agent) {
+        Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
+        if (agentCell != null) {
+            if (agentCell.getAgent() != null && agentCell.getAgent().getCarriedItem() != null) {
+                synchronized (this.resourcesList) {
+
+                    agentCell.setResource(agentCell.getAgent().getCarriedItem());
+                    agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
+
+                    this.resourcesList.put(agentCell.getResource().getName(), agentCell.getResource());
+                }
+            }
+            agentCell.clearAgent();
+
             return true;
         }
+
+        return false;
     }
 
     public synchronized boolean spawnAgent(Agent agent) {
@@ -686,39 +742,46 @@ public class GameMap {
             synchronized (this.map) {
                 synchronized (this.agentsList) {
 
+                    // If the agent's HP is 0 or less, perform respawn logic
                     if (agent.getHp() <= 0) {
-                        // If the agent's HP is 0 or less, perform respawn logic
-                        Cell agentCell = this.getCellByPosition(agent.getPose().getPosition());
-                        if (agentCell != null) {
-                            if (agentCell.getAgent() != null && agentCell.getAgent().getCarriedItem() != null) {
-                                synchronized (this.resourcesList) {
+                        agent.setState("dead");
+                        this.removeAgent(agent);
+                    } else {
+                        agent.setState("spawn");
+                    }
+//                agent.setHp(agent.getMaxHp());
 
-                                    agentCell.setResource(agentCell.getAgent().getCarriedItem());
-                                    agentCell.getAgent().stopCarrying(agentCell.getAgent().getCarriedItem());
+                    Cell randomCell = getRandomCell(agent, (agent.getTeam() == true) ? Zone.RBASE : Zone.BBASE, false);
 
-                                    this.resourcesList.put(agentCell.getResource().getName(), agentCell.getResource());
-                                }
-                            }
-                            agentCell.clearAgent();
-                        }
+                    if (randomCell != null) {
+                        result = setAgentPose(agent, randomCell.getX(), randomCell.getY(), Orientation.random());
+                    } else {
+                        result = false;
                     }
 
-//                agent.setHp(agent.getMaxHp());
-                agent.setState("spawn");
-                Cell randomCell = getRandomBaseCell(agent);
-
-                if (randomCell != null) {
-                    result = setAgentPose(agent, randomCell.getX(), randomCell.getY(), Orientation.random());
-                } else {
-                    result = false;
-                }
-
+                    return result;
             }
         }
         } finally {
             mapLock.writeLock().unlock();
         }
-        return result;
+    }
+
+    public synchronized boolean resetAgent (Agent agent) {
+        synchronized (this.agentsList) {
+            agent.setHp(agent.getMaxHp());
+            agent.setState("spawn");
+            return true;
+//            Cell randomCell = getRandomBaseCell(agent, false);
+//
+//            if (randomCell != null) {
+//                result = setAgentPose(agent, randomCell.getX(), randomCell.getY(), Orientation.random());
+//            } else {
+//                result = false;
+//            }
+//
+//            return result;
+        }
     }
 
     public synchronized boolean moveAgent(Agent agent, Vector2D newPosition, Orientation newOrientation) {
@@ -1133,9 +1196,7 @@ public class GameMap {
                 Pair<String, Vector2D> result = findClosestStructure(agent, Empty.class, empty -> ((Empty) empty).getType() == "empty_pr", "spawn");
 
                 if (agent_position.equals(redPrincessSpawnPoint)) {
-                    System.out.println("\nFuori\n");
                     if (agent.getCarriedItem() != null) {
-                        System.out.println("\nDentro\n");
                         agent_cell.setResource(agent.getCarriedItem());
                         agent.stopCarrying(agent.getCarriedItem());
 
@@ -1152,9 +1213,7 @@ public class GameMap {
                 Pair<String, Vector2D> result = findClosestStructure(agent, Empty.class, empty -> ((Empty) empty).getType() == "empty_pb", "spawn");
 
                 if (agent_position.equals(bluePrincessSpawnPoint)) {
-                    System.out.println("\nFuori\n");
                     if (agent.getCarriedItem() != null) {
-                        System.out.println("\nDentro\n");
                         agent_cell.setResource(agent.getCarriedItem());
                         agent.stopCarrying(agent.getCarriedItem());
 
@@ -1214,9 +1273,6 @@ public class GameMap {
             boolean isInRedBase = getCellByPosition(agent_position).getZoneType() == Zone.RBASE;
             boolean isInBlueBase = getCellByPosition(agent_position).getZoneType() == Zone.BBASE;
 
-            boolean isBlueOutsideBlueBase = this.getCellByPosition(princessB.get().getPose().getPosition()).getZoneType() != Zone.BBASE;
-            boolean isRedOutsideRedBase = this.getCellByPosition(princessR.get().getPose().getPosition()).getZoneType() != Zone.RBASE;
-
             boolean isBlueOutsideRedBase = this.getCellByPosition(princessB.get().getPose().getPosition()).getZoneType() != Zone.RBASE;
             boolean isRedOutsideBlueBase = this.getCellByPosition(princessR.get().getPose().getPosition()).getZoneType() != Zone.BBASE;
 
@@ -1235,7 +1291,13 @@ public class GameMap {
 
 
             // CAPTURE ENEMY PRINCESS
-            if ((isTeamRed && isBlueOutsideRedBase) || (isTeamBlue && isRedOutsideBlueBase)) {
+            if (isTeamRed && isBlueOutsideRedBase && isOnRightSidePB) {
+                return findClosestStructure(agent, Empty.class,
+                        empty -> ((Empty) empty).getType().equals("base_r"), "capture_enemy_princess");
+            } else if (isTeamBlue && isRedOutsideBlueBase && isOnLeftSidePR) {
+                return findClosestStructure(agent, Empty.class,
+                        empty -> ((Empty) empty).getType().equals("base_b"), "capture_enemy_princess");
+            } else if ((isTeamRed && isBlueOutsideRedBase) || (isTeamBlue && isRedOutsideBlueBase)) {
                 return findClosestResource(agent, Princess.class,
                         princess -> ((Princess) princess).getTeam() != agent.getTeam(),
                         "capture_enemy_princess");
@@ -1273,16 +1335,22 @@ public class GameMap {
         if (gate_b1.isPresent() && gate_b2.isPresent() && gate_r1.isPresent() && gate_r2.isPresent()
                 && !(agent.getCarriedItem() instanceof Princess)) {
 
-            boolean isGateB1Destroyed = gate_b1.get().isDestroyed();
-            boolean isGateB2Destroyed = gate_b2.get().isDestroyed();
-            boolean isGateR1Destroyed = gate_r1.get().isDestroyed();
-            boolean isGateR2Destroyed = gate_r2.get().isDestroyed();
             boolean isTeamBlue = !agent.getTeam();
             boolean isTeamRed = agent.getTeam();
 
+            boolean isGateB1Destroyed = gate_b1.get().isDestroyed();
+            boolean isGateB2Destroyed = gate_b2.get().isDestroyed();
+            boolean isBlueGateDestroyed = isGateB1Destroyed || isGateB2Destroyed;
+
+            boolean isGateR1Destroyed = gate_r1.get().isDestroyed();
+            boolean isGateR2Destroyed = gate_r2.get().isDestroyed();
+            boolean isRedGateDestroyed = isGateR1Destroyed || isGateR2Destroyed;
+
+
+
             if (isTeamBlue) {
                 synchronized (this.getWoodAmountBlue()) {
-                    if (this.getWoodAmountBlue().get() >= this.enoughWoodAmount) {
+                    if (isBlueGateDestroyed && this.getWoodAmountBlue().get() >= this.enoughWoodAmount) {
                         if (isGateB1Destroyed) {
                             Vector2D gate_b1_pos = gate_b1.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_b1_pos.getX() + 1, gate_b1_pos.getY() - 1));
@@ -1296,7 +1364,7 @@ public class GameMap {
 
             if (isTeamRed) {
                 synchronized (this.getWoodAmountRed()) {
-                    if (this.getWoodAmountRed().get() >= this.enoughWoodAmount) {
+                    if (isRedGateDestroyed && this.getWoodAmountRed().get() >= this.enoughWoodAmount) {
                         if (isGateR1Destroyed) {
                             Vector2D gate_r1_pos = gate_r1.get().getPose().getPosition();
                             return new Pair<>("repair_destroyed_gate", new Vector2D(gate_r1_pos.getX() - 1, gate_r1_pos.getY() - 1));
@@ -1406,7 +1474,8 @@ public class GameMap {
                 }
 
             default:
-                return null;
+                return new Pair<>("dead", agent.getPose().getPosition());
+//            return null;
 //                return this.fallbackPlan(agent);
 
         }
@@ -1536,7 +1605,7 @@ public class GameMap {
                 }
 
             default:
-                return null;
+                return new Pair<>("dead", agent.getPose().getPosition());
 //                return this.fallbackPlan(agent);
             }
     }
