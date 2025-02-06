@@ -10,27 +10,38 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import java.util.Properties;
 
+/**
+ * ConfigWindow is a JFrame-based user interface for configuring the game settings.
+ * It allows the user to set the map dimensions, team compositions (Blue and Red teams),
+ * and other game parameters. Once the configuration is done, the user can start the game.
+ * <p>
+ * The configuration is saved in a properties file for future use, and the game is launched
+ * using a specified MAS2J file and sprite resources. The user can also restart the game with
+ * new configurations or exit the application.
+ */
 public class ConfigWindow extends JFrame {
+    // Instance variables for the UI components
     private JTextField widthField, heightField;
     private JComboBox<Integer> gathererBlue, archerBlue, warriorBlue, priestBlue;
     private JComboBox<Integer> gathererRed, archerRed, warriorRed, priestRed;
     private JButton startGameButton;
-    // Get the root project directory (code/)
-    static File projectRoot = new File(System.getProperty("user.dir")).getParentFile();
 
-    // Define paths dynamically
+    // Directory paths
+    static File projectRoot = new File(System.getProperty("user.dir")).getParentFile();
     File mas2jFile = new File(projectRoot, "mas_princess/mas_princess.mas2j");
     File spriteDir = new File(projectRoot, "mas_princess/src/main/resources/sprites/");
 
+    // Paths for game configuration
     private final String SPRITE_PATH = spriteDir.getAbsolutePath() + File.separator;
     private final String MAS2J_FILE_PATH = mas2jFile.getAbsolutePath();
     private final String LOGO_PATH = SPRITE_PATH + "logo.png";
     private final File configFile = new File(projectRoot, "config.properties");
-    private static Process gameProcess; // Store the process
 
+    private static Process gameProcess; // Store the game process for termination
 
-
-
+    /**
+     * Constructs the ConfigWindow frame and initializes the UI components.
+     */
     public ConfigWindow() {
         setTitle("Game Configuration");
         setSize(800, 700);
@@ -130,10 +141,14 @@ public class ConfigWindow extends JFrame {
         loadConfig();
         setVisible(true);
     }
-
-
-
-
+    /**
+     * Loads an image from the given path and resizes it to the specified dimensions.
+     *
+     * @param path  The path to the image file.
+     * @param width The desired width of the image.
+     * @param height The desired height of the image.
+     * @return A JLabel containing the scaled image, or null if loading fails.
+     */
     private JLabel loadImage(String path, int width, int height) {
         try {
             ImageIcon icon = new ImageIcon(ImageIO.read(new File(path)));
@@ -144,14 +159,23 @@ public class ConfigWindow extends JFrame {
             return null;
         }
     }
-
+    /**
+     * Creates a JComboBox with integer values ranging from 0 to maxValue.
+     *
+     * @param maxValue The maximum value to be included in the dropdown.
+     * @return A JComboBox populated with integer values.
+     */
     private JComboBox<Integer> createAgentDropdown(int maxValue) {
         Integer[] values = new Integer[maxValue + 1]; // Allow values from 0 to maxValue
         for (int i = 0; i <= maxValue; i++) values[i] = i;
         return new JComboBox<>(values);
     }
-
-
+    /**
+     * Generates a configuration string for agent types based on selected agent counts.
+     *
+     * @param agentCounts A map containing agent types and their respective counts.
+     * @return A formatted string representing the agent configuration.
+     */
     private String generateAgentConfig(Map<String, Integer> agentCounts) {
         StringBuilder agentsConfig = new StringBuilder();
         int blueCounter = 1, redCounter = 1;
@@ -173,7 +197,10 @@ public class ConfigWindow extends JFrame {
 
         return agentsConfig.toString();
     }
-
+    /**
+     * Action listener for starting the game by reading configuration settings,
+     * saving them, and launching the game process.
+     */
     private class StartGameListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -204,6 +231,13 @@ public class ConfigWindow extends JFrame {
             }
         }
     }
+    /**
+     * Adds a selection listener to the provided agent dropdowns to ensure the total
+     * number of agents per team does not exceed 4.
+     *
+     * @param teamDropdowns Array of JComboBoxes representing the team agent types.
+     * @param isBlueTeam    Flag indicating whether this is the Blue team or not.
+     */
     private void addAgentSelectionListener(JComboBox<Integer>[] teamDropdowns, boolean isBlueTeam) {
         for (JComboBox<Integer> dropdown : teamDropdowns) {
             dropdown.addActionListener(e -> {
@@ -226,55 +260,9 @@ public class ConfigWindow extends JFrame {
             });
         }
     }
-
-    private void updateMas2jFile(int width, int height, String agentsConfig) {
-        try {
-            File mas2jFile = new File(MAS2J_FILE_PATH);
-            if (!mas2jFile.exists()) {
-                JOptionPane.showMessageDialog(null, "MAS2J file not found!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            StringBuilder newContent = new StringBuilder();
-            newContent.append("MAS princess {\n")
-                    .append("\tinfrastructure: Centralised\n")
-                    .append("\tenvironment: env.BlackForestEnvironment(").append(width).append(", ").append(height).append(")\n")
-                    .append("\tagents:\n").append(agentsConfig)
-                    .append("\taslSourcePath:\n\t\"src/main/asl\";\n}");
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(mas2jFile));
-            writer.write(newContent.toString());
-            writer.close();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private static void launchGame() throws IOException {
-
-            ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", "gradlew.bat", "runMas_princessMas");
-            processBuilder.redirectErrorStream(true);
-            processBuilder.directory(projectRoot);
-
-            gameProcess = processBuilder.start();
-
-            // Read output asynchronously to prevent blocking
-            new Thread(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(gameProcess.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println(line);
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }).start();
-
-        }
-
-
-
-
+    /**
+     * Saves the current configuration to the properties file.
+     */
     private void saveConfig() {
         Properties configProps = new Properties();
         configProps.setProperty("width", widthField.getText());
@@ -297,7 +285,9 @@ public class ConfigWindow extends JFrame {
             e.printStackTrace();
         }
     }
-
+    /**
+     * Loads the saved configuration from the properties file.
+     */
     private void loadConfig() {
         if (configFile.exists()) {
             Properties configProps = new Properties();
@@ -323,7 +313,67 @@ public class ConfigWindow extends JFrame {
             }
         }
     }
+    /**
+     * Updates the MAS2J file with new dimensions and agent configuration.
+     *
+     * @param width         The width of the map.
+     * @param height        The height of the map.
+     * @param agentsConfig  The agent configuration string.
+     */
+    private void updateMas2jFile(int width, int height, String agentsConfig) {
+        try {
+            File mas2jFile = new File(MAS2J_FILE_PATH);
+            if (!mas2jFile.exists()) {
+                JOptionPane.showMessageDialog(null, "MAS2J file not found!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
+            StringBuilder newContent = new StringBuilder();
+            newContent.append("MAS princess {\n")
+                    .append("\tinfrastructure: Centralised\n")
+                    .append("\tenvironment: env.BlackForestEnvironment(").append(width).append(", ").append(height).append(")\n")
+                    .append("\tagents:\n").append(agentsConfig)
+                    .append("\taslSourcePath:\n\t\"src/main/asl\";\n}");
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(mas2jFile));
+            writer.write(newContent.toString());
+            writer.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+    /**
+     * Launches the game by executing the MAS2J file as a process.
+     *
+     * @throws IOException If an error occurs while launching the game.
+     */
+    private static void launchGame() throws IOException {
+
+            ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", "gradlew.bat", "runMas_princessMas");
+            processBuilder.redirectErrorStream(true);
+            processBuilder.directory(projectRoot);
+
+            gameProcess = processBuilder.start();
+
+            // Read output asynchronously to prevent blocking
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(gameProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
+
+        }
+    /**
+     * Displays a "Game Over" result frame, showing the winning team and providing options to restart with a new configuration or exit the game.
+     * The background and text color of the result screen depend on the winning team.
+     *
+     * @param winningTeam The team that won the game, either "Red Team" or "Blue Team".
+     */
     public static void showGameResult(String winningTeam) {
         JFrame resultFrame = new JFrame("Game Over");
         resultFrame.setSize(400, 200);
@@ -350,7 +400,7 @@ public class ConfigWindow extends JFrame {
         buttonPanel.setLayout(new FlowLayout());
 
         // Restart with new configuration
-        JButton restartNewConfigButton = new JButton("Restart with New Config");
+        JButton restartNewConfigButton = new JButton("Restart");
         restartNewConfigButton.addActionListener(e -> {
             resultFrame.dispose();
             terminateGameProcess();
@@ -375,7 +425,10 @@ public class ConfigWindow extends JFrame {
         resultFrame.setLocationRelativeTo(null);
         resultFrame.setVisible(true);
     }
-
+    /**
+     * Terminates the currently running game process by forcefully destroying it.
+     * This method is used when restarting the game or exiting the application.
+     */
     private static void terminateGameProcess() {
         if (gameProcess != null) {
             gameProcess.toHandle().destroyForcibly();
@@ -386,7 +439,11 @@ public class ConfigWindow extends JFrame {
             }
         }
     }
-
+    /**
+     * Restarts the Java application by either relaunching the current JAR file or
+     * restarting the class-based execution, depending on how the program was started.
+     * This method is used when restarting the game with a new configuration.
+     */
     private static void restartJavaProcess() {
         try {
             String javaBin = System.getProperty("java.home") + "/bin/java";
@@ -405,7 +462,6 @@ public class ConfigWindow extends JFrame {
             e.printStackTrace();
         }
     }
-
 
     public static void main(String[] args) {
         new ConfigWindow();

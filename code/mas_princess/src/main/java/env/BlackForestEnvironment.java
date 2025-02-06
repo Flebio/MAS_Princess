@@ -1,14 +1,10 @@
 package env;
 
+import env.utils.*;
 import env.agents.*;
 import env.objects.structures.*;
 import env.objects.resources.*;
 
-import env.utils.*;
-
-import static env.utils.Direction.*;
-
-import jason.RevisionFailedException;
 import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.environment.Environment;
@@ -16,12 +12,21 @@ import jason.environment.Environment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static env.utils.AbsoluteMovement.*;
 
+
+/**
+ * The `BlackForestEnvironment` class extends the `Environment` class and implements `MapEnvironment`.
+ * It provides an interface between the AgentSpeak agents and the simulation world.
+ *
+ * This class is responsible for handling percepts, actions, and interactions between agents
+ * and the game environment. It ensures that multi-agent behaviors are synchronized with
+ * the simulation model (`BlackForestModel`).
+ */
 public class BlackForestEnvironment extends Environment implements MapEnvironment {
 
     private static final Random RAND = new Random();
@@ -30,12 +35,17 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
     private BlackForestView view;
     private long threadSleep, threadSleepRespawn;
 
+
+    /**
+     * Initializes the BlackForestEnvironment with the given parameters.
+     * Sets up the model, view, and defines sleep intervals for agent actions.
+     *
+     * @param args Array containing width and height of the environment.
+     */
     @Override
     public void init(final String[] args) {
         this.model = new BlackForestModel(Integer.parseInt(args[0]), Integer.parseInt(args[1]), null);
-//        this.threadSleep = 1000L / model.getFPS(); // 1000ms / 4 = 250ms = 0.25s
-        this.threadSleep = 350L; // 1000ms / 4 = 250ms = 0.25s
-//        this.threadSleepRespawn = threadSleep * 30; // 250ms * 60 = 15000ms = 15s
+        this.threadSleep = 1000L / this.model.getFPS(); // 1000ms / 4 = 250ms = 0.25s
         this.threadSleepRespawn = threadSleep * 20; // 250ms * 60 = 15000ms = 15s
         this.view = new BlackForestView(model);
 
@@ -44,37 +54,39 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         view.setVisible(true);
     }
 
-
+    /**
+     * Notifies the view that the model has changed.
+     * Used to refresh the GUI representation of the environment.
+     */
     @Override
     public void notifyModelChangedToView() {
         view.notifyModelChanged();
     }
 
+    /**
+     * Initializes an agent if it does not already exist in the model.
+     * If the agent exists, returns the existing agent. Otherwise, creates a new instance based on the agent's name pattern.
+     *
+     * @param agentName The name of the agent to initialize.
+     * @return The initialized agent or null if initialization fails.
+     */
     @Override
     public Agent initializeAgentIfNeeded(String agentName) {
         Optional<Agent> optionalAgent = this.model.getAgentByName(agentName);
 
-//        if (!optionalAgent.isEmpty() && optionalAgent.get().getHp() <= 0) {
-//            System.out.println("Eccolo:  " + optionalAgent);
-//        }
-         if (optionalAgent.isEmpty()) {
-//            System.out.println("NECESSARIO");
+        if (optionalAgent.isEmpty()) {
             String[] parts = agentName.split("_");
 
-            String type = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);  // Capitalize first letter of type
-            String team = parts[1];  // Extract team (after underscore)
+            String type = parts[0].substring(0, 1).toUpperCase() + parts[0].substring(1);  // Type
+            String team = parts[1];  // Team (after underscore)
 
             try {
-                // Assuming the class names are "Warrior", "Archer", etc.
-                Class<?> agentClass = Class.forName("env.agents." + type);  // Fully qualified class name
+                Class<?> agentClass = Class.forName("env.agents." + type);
 
-                // Create an instance of the agent class
                 Constructor<?> constructor = agentClass.getConstructor(String.class, boolean.class);
 
-                // Instantiate the object
                 Agent agent = (Agent) constructor.newInstance(agentName, team.contains("r"));  // 'r' -> true, 'b' -> false
 
-                // Add agent to the model
                 this.model.spawnAgent(agent);
                 notifyModelChangedToView();
 
@@ -99,30 +111,36 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         return null;
     }
 
+    /**
+     * Retrieves the percepts (sensory information) for a given agent.
+     * This includes personal beliefs, surrounding tiles, and objects within range.
+     *
+     * @param agentName The name of the agent whose percepts are retrieved.
+     * @return A collection of perceptual literals representing the agent's knowledge.
+     */
     @Override
     public Collection<Literal> getPercepts(String agentName) {
         Agent agent = initializeAgentIfNeeded(agentName);
-        //        logger.info("Fetching percepts for agent: " + agentName);
 
-        // Combine percepts: personal beliefs, surrounding tiles and neighbors.
         return Stream.concat(
                 personalBeliefsPercepts(agent).stream(),
-                        Stream.concat(
-                                surroundingPercepts(agent).stream(),
-                                inRangePercepts(agent).stream()
-                        )
+                Stream.concat(
+                        surroundingPercepts(agent).stream(),
+                        inRangePercepts(agent).stream()
+                )
         ).collect(Collectors.toList());
     }
 
-
+    /**
+     * Computes the personal belief percepts of an agent.
+     * This includes position, orientation, objectives, and state information.
+     *
+     * @param agent The agent whose beliefs are being computed.
+     * @return A collection of literals representing the agent’s personal beliefs.
+     */
     @Override
     public Collection<Literal> personalBeliefsPercepts(Agent agent) {
         Collection<Literal> personalBeliefs = new ArrayList<>();
-
-//        personalBeliefs.add(Literal.parseLiteral(String.format("hp(%d)", agent.getHp())));
-//        if (agent.getHp() <= 0) {
-//            personalBeliefs.add(Literal.parseLiteral("dead(true)"));
-//        }
 
         personalBeliefs.add(Literal.parseLiteral(String.format("position(%d, %d)", agent.getPose().getPosition().getX(), agent.getPose().getPosition().getY())));
         personalBeliefs.add(Literal.parseLiteral(String.format("orientation(%s)", agent.getPose().getOrientation().name().toLowerCase())));
@@ -130,7 +148,6 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         Pair<String, Vector2D> closest_objective = this.model.getClosestObjective(agent);
         if (agent.getPose().getPosition().equals(closest_objective.getSecond())) {
             agent.setState(closest_objective.getFirst());
-//            closest_objective = this.model.getClosestObjective(agent);
         }
 
         personalBeliefs.add(Literal.parseLiteral(String.format("objective(%s)", closest_objective.getFirst())));
@@ -143,14 +160,19 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         } else {
             personalBeliefs.add(Literal.parseLiteral(String.format("state(%s)", agent.getState())));
         }
-        // If for each agent we get its position and team we can give information
-        // about where each ally and enemy are
-        // for ag in this.model.getAllAgents():
 
         return personalBeliefs;
     }
 
-
+    /**
+     * Retrieves the percepts related to the agent's immediate surroundings.
+     * Includes information about obstacles, allies, enemies, structures, and zone types.
+     * This information is employed to conduct the movements logic and to apply
+     * the zone and structure effect if there is one.
+     *
+     * @param agent The agent whose surrounding percepts are retrieved.
+     * @return A collection of literals representing the agent's surroundings.
+     */
     @Override
     public Collection<Literal> surroundingPercepts(Agent agent) {
         Collection<Literal> surroundings = model.getAgentSurroundingPositions(agent).entrySet().stream()
@@ -167,6 +189,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         return surroundings;
     }
 
+    /**
+     * Generates a percept for an object or entity located in a given direction relative to the agent.
+     *
+     * @param agent     The agent perceiving the environment.
+     * @param direction The direction relative to the agent.
+     * @param position  The position being examined.
+     * @return A literal representing the percept in the given direction.
+     */
     private Literal proximityPerceptFor(Agent agent, Direction direction, Vector2D position) {
         Cell surroundingCell = this.model.getCellByPosition(position);
 
@@ -196,6 +226,15 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         }
     }
 
+    /**
+     * Retrieves percepts for objects or entities within the agent’s range.
+     * Includes nearby agents, gates, trees, and princesses.
+     * This information is used by the agents to acknowledge when they can
+     * interact with artifacts or other agents.
+     *
+     * @param agent The agent whose in-range percepts are retrieved.
+     * @return A collection of literals representing objects in range.
+     */
     @Override
     public Collection<Literal> inRangePercepts(Agent agent) {
         Collection<Literal> in_range = new ArrayList<>();
@@ -217,6 +256,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                     .map(Literal::parseLiteral)
                     .collect(Collectors.toList()));
 
+            // Only gatherer agents perceive ally gate (to be repaired) and trees
             if (agent instanceof Gatherer) {
                 // Add percepts for ally gates in range
                 in_range.addAll(model.getGateNeighbours(agent, "ally", agent.getAttackRange()).stream()
@@ -237,6 +277,7 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
                     .map(Literal::parseLiteral)
                     .collect(Collectors.toList()));
 
+            // An agent perceives the enemy princes when she is outside of the base where she is prisoned
             if (!((this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.BBASE) ||
                     (this.model.getCellByPosition(agent.getPose().getPosition()).getZoneType() == Zone.RBASE))) {
 
@@ -251,6 +292,15 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
         return in_range;
     }
 
+    /**
+     * Executes an action requested by an agent.
+     * Handles movement, attacks, healing, picking up resources (princesses),
+     * and interactions with structures.
+     *
+     * @param ag     The name of the agent performing the action.
+     * @param action The action structure containing the action type and parameters.
+     * @return True if the action is successfully executed, false otherwise.
+     */
     @Override
     public boolean executeAction(final String ag, final Structure action) {
         Agent agent = initializeAgentIfNeeded(ag);
@@ -259,12 +309,6 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         if (agent.getHp() <= 0 || action.toString().contains("respawn")) {
             agent.setHp(0);
-
-//            this.model.printAgentList(logger);
-
-//            if (agent.getCarriedItem() != null) {
-//                this.model.printMap(logger);
-//            }
 
             result = model.spawnAgent(agent);
             notifyModelChangedToView();
@@ -280,28 +324,14 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             return result;
         }
 
-        //logger.info(ag + " does action: " + action.toString());
 
-        if (movementActions.containsValue(action)) {
-            if (action.equals(movementActions.get("random"))) {
-                Direction randomDirection = Direction.random();
-                //logger.info("Chosen direction for random movement: " + randomDirection);
-                result = model.moveAgent(agent, 1, randomDirection);
-                notifyModelChangedToView();
-            } else {
-                Direction direction = getDirectionForAction(action, movementActions);
-                result = model.moveAgent(agent, 1, direction);
-                notifyModelChangedToView();
-            }
-        } else if (absoluteMovementActions.containsValue(action)) {
+        if (absoluteMovementActions.containsValue(action)) {
             if (action.equals(absoluteMovementActions.get("random"))) {
                 Direction randomAbsoluteDirection = getRandomAbsoluteDirection(agent);
-                //logger.info("Executing random absolute movement resolved to " + randomAbsoluteDirection);
                 result = model.moveAgent(agent, 1, randomAbsoluteDirection);
                 notifyModelChangedToView();
             } else {
                 Direction absoluteDirection = getDirectionForAbsoluteMove(agent, action);
-                //logger.info("Executing absolute movement: " + action + " resolved to " + absoluteDirection);
                 result = model.moveAgent(agent, 1, absoluteDirection);
                 notifyModelChangedToView();
             }
@@ -326,37 +356,28 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
             }
             result = model.attackGate(agent, target.get());
             notifyModelChangedToView();
-        }else if (action.toString().contains("repair_gate")) {
+        } else if (action.toString().contains("repair_gate")) {
             Optional<Gate> target = this.model.getGateByName(action.getTerm(0).toString());
             if (target.get() == null) {
                 return false;
             }
             result = model.repairGate(agent, target.get());
             notifyModelChangedToView();
-        }else if (action.toString().contains("attack_tree")) {
+        } else if (action.toString().contains("attack_tree")) {
             Optional<Tree> target = this.model.getTreeByName(action.getTerm(0).toString());
             if (target.get() == null) {
                 return false;
             }
             result = model.attackTree(agent, target.get());
             notifyModelChangedToView();
-        }  else if (action.toString().contains("pick_up_princess")) {
-//            System.out.println("PRIMA");
-//            this.model.printAgentList(logger);
-//            this.model.printMap(logger);
+        } else if (action.toString().contains("pick_up_princess")) {
             Optional<Princess> target = this.model.getPrincessByName(action.getTerm(0).toString());
-
             if (target.get() == null) {
                 return false;
             }
             result = model.pickUpPrincess(agent, target.get());
-
-//            System.out.println("DOPO");
-//            this.model.printAgentList(logger);
-//            this.model.printMap(logger);
-
             notifyModelChangedToView();
-        } else{
+        } else {
             logger.warning("Unknown action: " + action);
             return false;
         }
@@ -368,76 +389,4 @@ public class BlackForestEnvironment extends Environment implements MapEnvironmen
 
         return result;
     }
-
-    // Movement actions collection
-    private static final Map<String, Literal> movementActions = Map.of(
-            FORWARD.name().toLowerCase(), Literal.parseLiteral("move(" + FORWARD.name().toLowerCase() + ")"),
-            RIGHT.name().toLowerCase(), Literal.parseLiteral("move(" + RIGHT.name().toLowerCase() + ")"),
-            LEFT.name().toLowerCase(), Literal.parseLiteral("move(" + LEFT.name().toLowerCase() + ")"),
-            BACKWARD.name().toLowerCase(), Literal.parseLiteral("move(" + BACKWARD.name().toLowerCase() + ")"),
-            "random", Literal.parseLiteral("move(random)")
-    );
-
-    private Direction getDirectionForAction(Structure action, Map<String, Literal> mapping) {
-        return mapping.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(action))
-                .map(entry -> Direction.valueOf(entry.getKey().toUpperCase()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Action does not map to any direction: " + action));
-    }
-
-    // Map for absolute movement actions
-    private static final Map<String, Literal> absoluteMovementActions = Map.of(
-            "up", Literal.parseLiteral("absolute_move(up)"),
-            "down", Literal.parseLiteral("absolute_move(down)"),
-            "left", Literal.parseLiteral("absolute_move(left)"),
-            "right", Literal.parseLiteral("absolute_move(right)"),
-            "random", Literal.parseLiteral("absolute_move(random)")
-    );
-
-    // Mapping of absolute movement based on current orientation
-    private static final Map<Orientation, Map<String, Direction>> absoluteMovementMapping = Map.of(
-            Orientation.NORTH, Map.of(
-                    "left", Direction.LEFT,
-                    "right", Direction.RIGHT,
-                    "up", Direction.FORWARD,
-                    "down", Direction.BACKWARD
-            ),
-            Orientation.SOUTH, Map.of(
-                    "left", Direction.RIGHT,
-                    "right", Direction.LEFT,
-                    "up", Direction.BACKWARD,
-                    "down", Direction.FORWARD
-            ),
-            Orientation.EAST, Map.of(
-                    "left", Direction.BACKWARD,
-                    "right", Direction.FORWARD,
-                    "up", Direction.LEFT,
-                    "down", Direction.RIGHT
-            ),
-            Orientation.WEST, Map.of(
-                    "left", Direction.FORWARD,
-                    "right", Direction.BACKWARD,
-                    "up", Direction.RIGHT,
-                    "down", Direction.LEFT
-            )
-    );
-
-    private Direction getDirectionForAbsoluteMove(Agent agent, Structure action) {
-        Orientation currentOrientation = agent.getPose().getOrientation();
-
-        return absoluteMovementMapping.getOrDefault(currentOrientation, Map.of()).entrySet().stream()
-                .filter(entry -> absoluteMovementActions.get(entry.getKey()).equals(action))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Action does not map to any absolute direction: " + action));
-    }
-
-    private Direction getRandomAbsoluteDirection(Agent agent) {
-        Orientation currentOrientation = agent.getPose().getOrientation();
-        List<Direction> possibleDirections = new ArrayList<>(absoluteMovementMapping.get(currentOrientation).values());
-        Collections.shuffle(possibleDirections);
-        return possibleDirections.get(0);
-    }
-
 }

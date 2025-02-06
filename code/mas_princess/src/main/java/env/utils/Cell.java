@@ -4,15 +4,26 @@ import env.agents.*;
 import env.objects.resources.*;
 import env.objects.structures.*;
 
+/**
+ * Represents a single cell on the game map.  Each cell can contain a zone type, a structure,
+ * a resource, and an agent.  This class manages the state of the cell and provides methods for
+ * interacting with its contents.
+ */
 public class Cell {
     private final int x;
     private final int y;
     private Zone zoneType;
     private MapStructure structure;
     private Resource resource;
-    private Agent agent; // To track the agent present in this cell
+    private Agent agent;
 
-    // Constructor
+    /**
+     * Constructs a new Cell with the specified zone type and coordinates.
+     *
+     * @param zoneType the type of zone this cell belongs to.
+     * @param x        the x-coordinate of the cell.
+     * @param y        the y-coordinate of the cell.
+     */
     public Cell(Zone zoneType, int x, int y) {
         this.zoneType = zoneType;
         this.structure = null; // No structure by default
@@ -22,71 +33,137 @@ public class Cell {
         this.y = y;
     }
 
-    // Getters and Setters
-
+    /**
+     * Returns the x-coordinate of this cell.
+     *
+     * @return the x-coordinate.
+     */
     public int getX() {
         return x;
     }
 
+    /**
+     * Returns the y-coordinate of this cell.
+     *
+     * @return the y-coordinate.
+     */
     public int getY() {
         return y;
     }
 
+    /**
+     * Returns the position of this cell as a {@code Vector2D}.
+     *
+     * @return a {@code Vector2D} representing the cell's position.
+     */
     public Vector2D getPosition() {
         return new Vector2D(x, y);
     }
 
+    /**
+     * Returns the zone type of this cell.
+     *
+     * @return the zone type.
+     */
     public Zone getZoneType() {
         return zoneType;
     }
 
+    /**
+     * Sets the zone type of this cell.
+     *
+     * @param zoneType the new zone type.
+     */
     public void setZoneType(Zone zoneType) {
         this.zoneType = zoneType;
     }
 
+    /**
+     * Returns the structure contained in this cell.
+     *
+     * @return the structure, or {@code null} if no structure is present.
+     */
     public MapStructure getStructure() {
         return structure;
     }
 
+    /**
+     * Sets the structure contained in this cell.  Throws an exception if the cell already
+     * contains a resource or an agent.
+     *
+     * @param structure the structure to place in the cell.
+     * @throws IllegalStateException if the cell is already occupied by a resource or an agent.
+     */
     public void setStructure(MapStructure structure) {
         if (structure == null) {
             this.structure = null;
-        }else if (this.isOccupied(null, null)) {
+        } else if (this.isOccupied(null, null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.structure = structure;
         }
     }
 
+    /**
+     * Returns the resource contained in this cell.
+     *
+     * @return the resource, or {@code null} if no resource is present.
+     */
     public Resource getResource() {
         return resource;
     }
 
+    /**
+     * Sets the resource contained in this cell. Throws an exception if the cell already
+     * contains a structure or an agent.
+     *
+     * @param resource the resource to place in the cell.
+     * @throws IllegalStateException if the cell is already occupied by a structure or an agent.
+     */
     public void setResource(Resource resource) {
         if (resource == null) {
             this.resource = null;
-        }else if (this.isOccupied(null, resource)) {
+        } else if (this.isOccupied(null, resource)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.resource = resource;
         }
     }
 
-    // Agent
+    /**
+     * Returns the agent contained in this cell.
+     *
+     * @return the agent, or {@code null} if no agent is present.
+     */
     public Agent getAgent() {
         return this.agent;
     }
 
+    /**
+     * Sets the agent contained in this cell. Throws an exception if the cell already
+     * contains a structure or a resource.
+     *
+     * @param agent the agent to place in the cell.
+     * @throws IllegalStateException if the cell is already occupied by a structure or a resource.
+     */
     public void setAgent(Agent agent) {
         if (agent == null) {
             this.agent = null;
-        }else if (this.isOccupied(agent, null)) {
+        } else if (this.isOccupied(agent, null)) {
             throw new IllegalStateException("A cell cannot contain both a structure, a resource or an agent.");
         } else {
             this.agent = agent;
         }
     }
 
+    /**
+     * Checks if this cell is occupied by a structure, resource, or agent.  Considers special cases
+     * for walkable structures (destroyed trees/gates, gates of the same team) and agents carrying resources.
+     *
+     * @param movingAgent   The agent that may be moving into the cell (used for gate checks).
+     * @param movingResource The resource that may be moving into the cell (used for carried resource checks).
+     * @return {@code true} if the cell is occupied, {@code false} otherwise.
+     */
     public boolean isOccupied(Agent movingAgent, Resource movingResource) {
         // Check if the cell is completely empty
         if (this.agent == null && this.structure == null && this.resource == null) {
@@ -131,21 +208,32 @@ public class Cell {
         return true;
     }
 
-
-    // Utility Methods
-
+    /**
+     * Clears the agent from this cell.
+     */
     public void clearAgent() {
         this.agent = null;
     }
 
+    /**
+     * Clears the structure from this cell.
+     */
     public void clearStructure() {
         this.structure = null;
     }
 
+    /**
+     * Clears the resource from this cell.
+     */
     public void clearResource() {
         this.resource = null;
     }
 
+    /**
+     * Returns a character symbol representing the zone type of this cell.
+     *
+     * @return a character symbol for the zone type.
+     */
     private char getZoneSymbol() {
         return switch (zoneType) {
             case BBASE -> '1';
@@ -156,6 +244,11 @@ public class Cell {
         };
     }
 
+    /**
+     * Returns a character symbol representing the structure in this cell.
+     *
+     * @return a character symbol for the structure, or ' ' if no structure is present.
+     */
     private char getStructureSymbol() {
         if (structure instanceof Gate) return 'G';
         if (structure instanceof Wall) return 'M';
@@ -164,11 +257,21 @@ public class Cell {
         return ' ';
     }
 
+    /**
+     * Returns a character symbol representing the resource in this cell.
+     *
+     * @return a character symbol for the resource, or ' ' if no resource is present.
+     */
     private char getResourceSymbol() {
         if (resource instanceof Princess) return 'P';
         return ' ';
     }
 
+    /**
+     * Returns a character symbol representing the agent in this cell.
+     *
+     * @return a character symbol for the agent, or ' ' if no agent is present.
+     */
     private char getAgentSymbol() {
         if (agent instanceof Warrior) return 'W';
         if (agent instanceof Archer) return 'A';
@@ -177,6 +280,11 @@ public class Cell {
         return ' ';
     }
 
+    /**
+     * Returns a string representation of the cell content.
+     *
+     * @return a string representation of the cell content.
+     */
     @Override
     public String toString() {
         if (resource != null) {

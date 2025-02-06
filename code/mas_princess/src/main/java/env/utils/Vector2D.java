@@ -16,7 +16,7 @@ public final class Vector2D {
         return new Vector2D(RAND.nextInt(maxX), RAND.nextInt(maxY));
     }
 
-    Vector2D(int x, int y) {
+    public Vector2D(int x, int y) {
         this.x = x;
         this.y = y;
     }
