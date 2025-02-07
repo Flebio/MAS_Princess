@@ -76,10 +76,6 @@ public class compute_percentages extends DefaultInternalAction {
         currentAgent.delBel(current_p1);
         currentAgent.delBel(current_p2);
 
-        // QUELLO CHE DEVO FARE QUI è: SE NON ESISTE NELLA BB FREE(g), DOVE g CORRISPONDE AL MAPPING DATO DALL'ORIENTAMENTO
-        // E DALLA DIREZIONE (up, down, left or right) DOVE CI SI VUOLE SPOSTARE, SIGNIFICA CHE LA CASELLA NON è LIBERA.
-        // PER TANTO SI METTE QUELLA PROBABILITà A 0. DOPO DI CHE VA MODIFICATO L'AGENTE, PERCHé BISOGNA CONTROLLARE ENTRAMBE
-        // LE POSSIBILITà, E MUOVERSI RANDOM SE NESSUNA DELLE DUE è FATTIBILE.
         String current_orientation = currentAgent.findBel(Literal.parseLiteral("orientation(_)"), un).getTerm(0).toString();
         String direction_p1 = String.valueOf(args[4]);
         String direction_p2 = String.valueOf(args[5]);
@@ -89,13 +85,12 @@ public class compute_percentages extends DefaultInternalAction {
 
         BeliefBase bb = currentAgent.getBB();
 
-        // If direction 1 is not free, then the agent does not try to move there. A direction is free if in the BB we can find either
-        // free(direction), gate(direction) or bridge(direction).
+        // If direction 1 is not free, then the agent avoids it
         Boolean test_direction_p1_1 = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("free(%s)", abs_direction_p1))).orElse(false);
         Boolean test_direction_p1_g = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("gate(%s)", abs_direction_p1))).orElse(false);
         Boolean test_direction_p1_b = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("bridge(%s)", abs_direction_p1))).orElse(false);
         Boolean test_direction_p1_e = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("empty(%s)", abs_direction_p1))).orElse(false);
-//        Boolean test_direction_p1_a = Optional.ofNullable(bb.toString()).map(s -> s.contains(String.format("surrounding_ally(%s)", abs_direction_p1))).orElse(false);
+
         if (!test_direction_p1_1 && !test_direction_p1_g && !test_direction_p1_b && !test_direction_p1_e) { // && test_direction_p1_a)  {
             p1 = 0.0;
         }
@@ -109,13 +104,6 @@ public class compute_percentages extends DefaultInternalAction {
         if (!test_direction_p2_1 && !test_direction_p2_g && !test_direction_p2_b && !test_direction_p2_e) {// && test_direction_p2_a)  {
             p2 = 0.0;
         }
-
-        // Log the results
-//        System.out.println("ORIENTATION " + current_orientation);
-//        System.out.println("DIRECTION P1 " + direction_p1);
-//        System.out.println("DIRECTION P2 " + direction_p2);
-//        System.out.println("P1 (MOVE THROUGH X-AXIS): " + p1);
-//        System.out.println("P2 (MOVE THROUGH Y-AXIS): " + p2);
 
         currentAgent.addBel(Literal.parseLiteral(String.format(Locale.US, "p1(%.4f)", p1)));
         currentAgent.addBel(Literal.parseLiteral(String.format(Locale.US, "p2(%.4f)", p2)));

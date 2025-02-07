@@ -24,20 +24,20 @@ p2(0.0).
 
 +!savePrincess: position(K, J) & objective_position(H, I) & att_damage(AD) & state(S) & hp(HP)
     <-
-        ?check_win(S);
-        ?check_hp(HP);
-        ?check_structure_effect(S);
+        ?checkEnd(S);
+        ?checkHP(HP);
+        ?checkStructureEffect(S);
         ?allyPrincessInRange(S);
         ?enemyPrincessInRange(S);
         ?enemyInRange(S, AD);
         ?enemyGateInRange(S);
-        !move_towards_objective.
+        !moveTowardsObjective.
 
 -!savePrincess
     <-
         !savePrincess.
 
-+?check_win(S)
++?checkEnd(S)
     <-
         ?(S == win | S == lost);
         .drop_all_desires;
@@ -53,11 +53,11 @@ p2(0.0).
         .my_name(N);
         .kill_agent(N).
 
--?check_win(S)
+-?checkEnd(S)
     <-
         true.
 
-+?check_structure_effect(S)
++?checkStructureEffect(S)
     <-
         ?(structure(ST, EP) & ST == bridge);
 
@@ -71,11 +71,11 @@ p2(0.0).
             !spawn;
         }.
 
--?check_structure_effect(S)
+-?checkStructureEffect(S)
     <-
         true.
 
-+?check_hp(HP)
++?checkHP(HP)
     <-
         ?(HP <= 0);
         .drop_all_desires;
@@ -84,7 +84,7 @@ p2(0.0).
         .print("Dead. Respawning...");
         !spawn.
 
--?check_hp(HP)
+-?checkHP(HP)
     <-
         true.
 
@@ -174,7 +174,7 @@ Case 1 - The agent moves either right or down, towards the object.
               |
               |
 */
-+!move_towards_objective: position(K, J) & objective_position(H, I) & K <= H & J <= I & not(K == H & J == I)
++!moveTowardsObjective: position(K, J) & objective_position(H, I) & K <= H & J <= I & not(K == H & J == I)
     <-
         .random(X);
         utils.compute_percentages(K, J, H, I, right, down);
@@ -206,7 +206,7 @@ Case 2 - The agent moves either left or down, towards the object.
               |
               |
 */
-+!move_towards_objective: position(K, J) & objective_position(H, I) & K >= H & J <= I & not(K == H & J == I)
++!moveTowardsObjective: position(K, J) & objective_position(H, I) & K >= H & J <= I & not(K == H & J == I)
     <-
         .random(X);
         utils.compute_percentages(K, J, H, I, left, down);
@@ -238,7 +238,7 @@ Case 3 - The agent moves either right or up, towards the object.
      A        |
               |
 */
-+!move_towards_objective: position(K, J) & objective_position(H, I) & K <= H & J >= I & not(K == H & J == I)
++!moveTowardsObjective: position(K, J) & objective_position(H, I) & K <= H & J >= I & not(K == H & J == I)
     <-
         .random(X);
         utils.compute_percentages(K, J, H, I, right, up);
@@ -270,7 +270,7 @@ Case 4 - The agent moves either left or up, towards the object.
               |        A
               |
 */
-+!move_towards_objective: position(K, J) & objective_position(H, I) & K >= H & J >= I & not(K == H & J == I)
++!moveTowardsObjective: position(K, J) & objective_position(H, I) & K >= H & J >= I & not(K == H & J == I)
     <-
         .random(X);
         utils.compute_percentages(K, J, H, I, left, up);
@@ -292,6 +292,6 @@ Case 4 - The agent moves either left or up, towards the object.
 
         !savePrincess.
 
--!move_towards_objective: position(K, J) & objective_position(H, I)
+-!moveTowardsObjective: position(K, J) & objective_position(H, I)
     <-
        !savePrincess.
