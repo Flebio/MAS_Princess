@@ -1,15 +1,15 @@
 # MorelliZanotti2324 - Mas Princess
 
-![logo](./mas_princess/src/main/resources/sprites/logo.png "Logo")
+![logo](./code/mas_princess/src/main/resources/sprites/logo.png "Logo")
 
-## Description ![pblue](./mas_princess/src/main/resources/sprites/princess_blue.png "pblue")
+## Description ![pblue](./code/mas_princess/src/main/resources/sprites/princess_blue.png "pblue")
 This project aims to develop a simplified version of the game *Fat Princess*, where two teams of agents with different roles and specific abilities compete to rescue their princess while protecting their own, within a shared environment. 
 
 The environment models base layouts, resource locations, and agent states (e.g., health, positions, and tasks) to facilitate strategic interactions. The overall gameplay is governed by fixed rules with the possibility of dynamic variations based on the game state, adding complexity and adaptability to the system.
 
 Our work provides a platform to explore the dynamics of cooperation and competition in multi-agent systems: by assigning agents distinct roles and objectives, it enables the analysis of emergent behaviors and decision-making processes in controlled scenarios. This approach also facilitates a deeper understanding of role-based collaboration, studying how agents with complementary capabilities can work together to achieve shared goals.
 
-## Structure ![gater](./mas_princess/src/main/resources/sprites/gate_r.png "gater")
+## Structure ![gater](./code/mas_princess/src/main/resources/sprites/gate_r.png "gater")
 ```
 env/
    ├── agents/
@@ -53,17 +53,17 @@ env/
    └── rand_int.java          
 ```               
 
-## Features ![pred](./mas_princess/src/main/resources/sprites/princess_red.png "pred")
+## Features ![pred](./code/mas_princess/src/main/resources/sprites/princess_red.png "pred")
 - **Implement Diverse Agent Roles**  
   Design agents with specialized roles and behaviors, including:
    - **Warriors**: Engage in short-range combat to protect their base and facilitate the rescue of their princess.
-     ![warrior](./mas_princess/src/main/resources/sprites/warrior_red_south_1.png "warrior")
+     ![warrior](./code/mas_princess/src/main/resources/sprites/warrior_red_south_1.png "warrior")
    - **Archers**: Provide long-range combat support during offensive and defensive operations.
-     ![archer](./mas_princess/src/main/resources/sprites/archer_blue_south_1.png "archer")
+     ![archer](./code/mas_princess/src/main/resources/sprites/archer_blue_south_1.png "archer")
    - **Priests**: Heal other agents to maintain team strength during battles.
-     ![priest](./mas_princess/src/main/resources/sprites/priest_red_south_1.png "priest")
+     ![priest](./code/mas_princess/src/main/resources/sprites/priest_red_south_1.png "priest")
   - **Gatherers**: Collect resources to repair defenses.
-     ![gatherer](./mas_princess/src/main/resources/sprites/gatherer_blue_south_1.png "gatherer")
+     ![gatherer](./code/mas_princess/src/main/resources/sprites/gatherer_blue_south_1.png "gatherer")
 
 - **Explore Cooperation and Competition**
    - Investigate how agents interact and collaborate within teams to achieve shared objectives, such as protecting their princess or infiltrating the enemy base.
@@ -77,7 +77,7 @@ env/
    - Evaluate the effectiveness of multi-agent system (MAS) methodologies in handling dynamic, interactive environments typically managed by traditional game engines.
 
 
-## Installation ![tree](./mas_princess/src/main/resources/sprites/tree.png "Tree")
+## Installation ![tree](./code/mas_princess/src/main/resources/sprites/tree.png "Tree")
 #### Prerequisites
 
 Before you begin, ensure you have the following software installed:
@@ -121,9 +121,9 @@ You can start the application using one of the following Gradle commands:
    gradle runConfigWindow
    ```
 
-## Authors ![gateb](./mas_princess/src/main/resources/sprites/gate_b.png "gateb")
+## Authors ![gateb](./code/mas_princess/src/main/resources/sprites/gate_b.png "gateb")
 - Antonio Morelli - [antonio.morelli3@studio.unibo.it](mailto:antonio.morelli3@studio.unibo.it)
 - Fabio Zanotti - [fabio.zanotti2@studio.unibo.it](mailto:fabio.zanotti2@studio.unibo.it)
 
-## License ![wall](./mas_princess/src/main/resources/sprites/wall.png "Wall")
+## License ![wall](./code/mas_princess/src/main/resources/sprites/wall.png "Wall")
 This project is licensed under the MIT License.
